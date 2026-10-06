@@ -27,12 +27,16 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8002
 
 `DATABASE_URL` tanımlı değilse varsayılan `sqlite:///./ege_portal.db` kullanılır.
 
-`requirements.txt`, `ege_lisans`'ı **editable yol bağımlılığı** olarak kurar
-(`-e ../ege_lisans`) — vendorlama değil, portal sunucu tarafı olduğu için
-buna gerek yok (bkz. Tasarım kararları). `pip install -r requirements.txt`
-bu yüzden `ege_portal/` içinden çalıştırılmalı (yol ona göre çözülür);
-`ege_lisans` reposu bu repoyla aynı üst dizinde (`ege_platform/ege_lisans`)
-olmalı.
+`ege_lisans` (ortak lisans kütüphanesi) bu depoda **vendorlanmıştır**:
+`ege_lisans/` (kaynak: `ege_platform/ege_lisans/src/ege_lisans`, bkz.
+`ege_lisans/VENDOR_MANIFEST.json`). `requirements.txt`'te yol bağımlılığı yok —
+yalnızca kütüphanenin kendi bağımlılığı (`cryptography`) var, depo tek başına
+klonlanıp (CI dahil) kurulabilir.
+
+```
+python scripts/ege_lisans_senkron.py --kontrol   # vendor kopyası manifestle (ve kaynak yanındaysa kaynakla) eşleşiyor mu
+python scripts/ege_lisans_senkron.py --kopyala   # kaynaktan yeniden vendorla (manifesti yeniler)
+```
 
 ### Lisans imzalama anahtarı
 
@@ -197,11 +201,13 @@ devre dışı bırakılınca ikinci senaryo (aynı siparişe iki farklı ödeme)
   `RuntimeError` ile durur — sessizce imzasız lisans üretmez. Anahtar
   İÇERİĞİ sınıfın içinde hiç tutulmaz; her `imzala()` çağrısında dosyadan
   okunup `ege_lisans.signing.sign_payload`'a verilir, loglanmaz.
-- **`ege_lisans` vendorlanmadı, yol bağımlılığı (`-e ../ege_lisans`) olarak
-  eklendi** — README'de mapEGE/sisEGE/colEGE için "kaynak olarak
-  vendorlanır" deniyor ama bu ÜRÜN İSTEMCİLERİ için (dağıtılan pakete
-  gömülmeleri gerekiyor); portal sunucu tarafı ve tek bir yerde çalışıyor,
-  vendorlamanın getirisi yok, editable kurulum güncellemeyi kolaylaştırıyor.
+- **`ege_lisans` bu depoda vendorlanmıştır** (`./ege_lisans` +
+  `scripts/ege_lisans_senkron.py`, mapEGE/sisEGE/colEGE ile aynı desen). İlk
+  sürümde editable yol bağımlılığı (`-e ../ege_lisans`) kullanılmıştı; bu,
+  depo tek başına klonlandığında (GitHub Actions CI, Docker build) kardeş
+  dizin olmadığı için çözülemiyordu. Vendorlama bunu kaldırır; bedeli: kaynak
+  değişince `--kopyala` ile elle yeniden senkron gerekir (`--kontrol` CI'da
+  kendi manifestine karşı doğrulanır, kaynak yanındaysa kaynakla da).
 - **Çevrimdışı aktivasyon tek bir imzalı `license.json` üretir**
   (`POST /api/v1/subscriptions/{id}/offline-activation`,
   `app/services/offline_activation.py`) — abonelikteki HER ürün için tam
@@ -531,7 +537,7 @@ açılmaz.
 
 | Dosya | İşlev |
 |---|---|
-| `Dockerfile` | Çok aşamalı build: frontend (`node:22-alpine`) → backend (`python:3.12-slim`), non-root kullanıcı, `/healthz` healthcheck. **Build context `ege_portal/`DEĞİL, bir üst dizin** (`ege_platform/`) — `requirements.txt`'teki `-e ../ege_lisans` kardeş bir `ege_lisans/` dizini gerektirir (bkz. Dockerfile başlığındaki not). |
+| `Dockerfile` | Çok aşamalı build: frontend (`node:22-alpine`) → backend (`python:3.12-slim`), non-root kullanıcı, `/healthz` healthcheck. **Build context `ege_portal/`** (`docker build -f deploy/Dockerfile .`); `ege_lisans` vendorlu olduğundan kardeş dizin gerekmez, `.dockerignore` sırları/`node_modules`'u dışlar. |
 | `entrypoint.sh` | `alembic upgrade head` → `uvicorn` (bu sırayla — şema HER ZAMAN uygulamadan önce). Migration başarısız olursa süreç BAŞLAMAZ. |
 | `docker-compose.yml` | `db` (Postgres 16, kalıcı volume, dışa açık port YOK) + `app` (yalnız `127.0.0.1` port eşlemesi, kalıcı `portal_releases` volume'ü, özel anahtar salt-okunur bağlanır) + `caddy` (80/443 dışa açık, otomatik HTTPS). Sırlar `${VAR:?...}` — tanımsızsa compose AÇIKÇA hatayla durur. |
 | `Caddyfile` | Otomatik HTTPS (`{$PORTAL_DOMAIN:portal.bigventus.com}`) + güvenlik başlıkları + `reverse_proxy app:8002`. |

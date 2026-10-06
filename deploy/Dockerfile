@@ -1,48 +1,47 @@
 # EGE Lisans Portalı — üretim imajı (backend + frontend AYNI imajdan/AYNI
 # origin'den; mapEGE'nin geo_service/static deseninin AYNISI).
 #
-# BUILD CONTEXT `ege_platform/` (bu Dockerfile'ın İKİ üst dizini) OLMALI —
-# `requirements.txt`'teki `-e ../ege_lisans` (editable yol bağımlılığı,
-# vendorlanmadı — bkz. ege_portal/README.md "ege_lisans vendorlanmadı"
-# kararı) kardeş bir `ege_lisans/` dizini gerektirir, bu Dockerfile tek
-# başına `ege_portal/` içinden build EDİLEMEZ:
+# BUILD CONTEXT `ege_portal/` (bu Dockerfile'ın BİR üst dizini) — `ege_lisans`
+# bu depoda VENDORLANMIŞTIR (./ege_lisans, bkz. README "ege_lisans vendorlama"),
+# kardeş dizin gerekmez; depo tek başına klonlanıp build edilebilir:
 #
-#   docker build -f ege_portal/deploy/Dockerfile -t ege-portal:latest ege_platform/
+#   docker build -f deploy/Dockerfile -t ege-portal:latest .
 #
-# (docker-compose.yml bunu zaten `context: ../..` ile doğru ayarlar.)
+# (docker-compose.yml bunu `context: ..` + `dockerfile: deploy/Dockerfile` ile
+# zaten doğru ayarlar. `.dockerignore` build bağlamından node_modules, .env,
+# veritabanı ve anahtar dosyalarını dışlar.)
 
 # ── Aşama 1: Frontend build ───────────────────────────────────────────────
 FROM node:22-alpine AS frontend-builder
-WORKDIR /build/ege_portal/frontend
-COPY ege_portal/frontend/package*.json ./
+WORKDIR /build/frontend
+COPY frontend/package*.json ./
 RUN npm ci
-COPY ege_portal/frontend/ ./
-# vite.config.ts: build.outDir='../static' → /build/ege_portal/static
+COPY frontend/ ./
+# vite.config.ts: build.outDir='../static' → /build/static
 RUN npm run build
 
 
 # ── Aşama 2: Python backend ───────────────────────────────────────────────
 FROM python:3.12-slim AS backend
 
-# Kardeş ege_lisans (editable yol bağımlılığı, bkz. üstteki build context notu).
-COPY ege_lisans/ /srv/ege_lisans/
-
 WORKDIR /srv/ege_portal
-COPY ege_portal/requirements.txt ./
+COPY requirements.txt ./
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --no-cache-dir --upgrade pip \
  && pip install --no-cache-dir -r requirements.txt
 
-COPY ege_portal/app/ ./app/
-COPY ege_portal/alembic/ ./alembic/
-COPY ege_portal/alembic.ini ./
-COPY ege_portal/scripts/ ./scripts/
+COPY app/ ./app/
+COPY alembic/ ./alembic/
+COPY alembic.ini ./
+COPY scripts/ ./scripts/
+# Vendorlanmış ortak lisans kütüphanesi — uygulama koduyla birlikte imaja girer.
+COPY ege_lisans/ ./ege_lisans/
 
 # Build edilmiş frontend (aşama 1'den) — app/main.py bunu <repo kökü>/static
 # altında arar (bkz. frontend/vite.config.ts'deki AYNI not).
-COPY --from=frontend-builder /build/ege_portal/static ./static
+COPY --from=frontend-builder /build/static ./static
 
-COPY ege_portal/deploy/entrypoint.sh /entrypoint.sh
+COPY deploy/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 # non-root — konteyner içindeki bir güvenlik açığı, host'ta (ya da başka

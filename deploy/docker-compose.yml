@@ -39,10 +39,10 @@ services:
 
   app:
     build:
-      # `ege_portal/requirements.txt`'teki `-e ../ege_lisans` kardeş dizini
-      # gerektirir — context İKİ ÜST dizin (bkz. deploy/Dockerfile başlığı).
-      context: ../..
-      dockerfile: ege_portal/deploy/Dockerfile
+      # ege_lisans bu depoda vendorlu — context yalnız ege_portal/ (bkz.
+      # deploy/Dockerfile başlığı).
+      context: ..
+      dockerfile: deploy/Dockerfile
     restart: unless-stopped
     networks: [portal_net]
     depends_on:

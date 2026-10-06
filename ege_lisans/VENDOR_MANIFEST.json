@@ -1,0 +1,18 @@
+{
+  "source": "ege_platform/ege_lisans",
+  "source_version": "0.1.0",
+  "vendored_at": "2026-10-06T09:02:28+00:00",
+  "files": {
+    "__init__.py": "sha256:75c93409a498ae2bccde2f0b7f4aa0fd73c677f4899af0649c60c51df958cad6",
+    "canonical.py": "sha256:96ac3fcb949ee8e35d7832e84044ce76596f010d0cd24fdc3a7d6edae04792c3",
+    "clock.py": "sha256:fef5b01f3c385b230dc52763237168dfa8c1841a603aac647d55328a109d1515",
+    "context.py": "sha256:008ff9025c7e42dc32462b8e5dd7ffef899cf2e41818e4f405ae2882c40ea5fc",
+    "fingerprint.py": "sha256:f2de690c48b137152c367bb0e77969f5567e3e244a06d4536d2c3ca6db0baa43",
+    "keys.py": "sha256:29336c9ddf215ed9c583e45094b9149f28c48fccb4974c69cccc53d91882a6ca",
+    "schema_v1.py": "sha256:a046c0586f79f0d1103307cbf8bfbc284e674b81902d8072b6b4079a4d0ba89a",
+    "schema_v2.py": "sha256:5041d82fa939b4d31f31d5017d2b4469394ca09d82f0d617dd1d9b4c5179142e",
+    "signing.py": "sha256:dbd14d5ffed79ad4d057353fc957c4dcca4ac932474905b03986bdfe23a13dbd",
+    "trial.py": "sha256:b5e481f6ac654e6a1286b70e56c979fddb4dc915d90feb57f8ca66af6cd4f955",
+    "validate.py": "sha256:72f21d9146438e3c8e3c74b9dbf5e05d0053d07686c5f60928a15a1f6f1bb72b"
+  }
+}

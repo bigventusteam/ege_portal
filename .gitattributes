@@ -1,2 +1,5 @@
 *.sh text eol=lf
 deploy/entrypoint.sh text eol=lf
+# Vendorlu ege_lisans ozet-manifestli (VENDOR_MANIFEST.json): Windows core.autocrlf=true
+# checkout dosyalari CRLF yapip scripts/ege_lisans_senkron.py --kontrol u kirmasin.
+ege_lisans/** text eol=lf

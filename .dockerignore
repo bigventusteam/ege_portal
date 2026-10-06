@@ -1,0 +1,19 @@
+# Build baglamina GIRMEMESI gerekenler (sirlar, yerel veri, agir/uretilen dizinler).
+.git
+.github
+**/node_modules
+frontend/dist
+static
+.env
+.env.*
+!.env.example
+!.env.deploy.example
+*.db
+*.pem
+*.key
+release_storage
+**/__pycache__
+**/*.pyc
+.pytest_cache
+tests
+*.md

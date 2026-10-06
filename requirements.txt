@@ -11,8 +11,9 @@ itsdangerous==2.2.0
 bcrypt==4.2.1
 python-multipart==0.0.9
 
-# Ortak lisans imzalama/doğrulama kütüphanesi (bkz. ege_platform/ege_lisans).
-# Yol bağımlılığı bilerek editable: portal sunucu tarafı, vendorlamaya
-# gerek yok. `pip install -r requirements.txt` bu dosyanın (ege_portal/)
-# içinden çalıştırılmalı — yol ona göre çözülür.
--e ../ege_lisans
+# Ortak lisans imzalama/doğrulama kütüphanesi (ege_platform/ege_lisans) bu
+# depoda VENDORLANMIŞTIR: ./ege_lisans/ (bkz. ege_lisans/VENDOR_MANIFEST.json,
+# güncelleme: python scripts/ege_lisans_senkron.py --kopyala). Eskiden burada
+# `-e ../ege_lisans` yol bağımlılığı vardı; bu, tek başına klonlanan depoda
+# (CI) çözülemediği için kaldırıldı. Kütüphanenin kendi bağımlılığı:
+cryptography==50.0.0
