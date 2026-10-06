@@ -1,0 +1,175 @@
+:root {
+  --bg: #f8fafc;
+  --s0: #ffffff;
+  --s1: #ffffff;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --text-h: #0f172a;
+  --text-dim: #64748b;
+  --accent: #0ea5e9;
+  --accent-fg: #ffffff;
+  --ok: #16a34a;
+  --warn: #d97706;
+  --err: #dc2626;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+a {
+  color: var(--accent);
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.ege-container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+.ege-card {
+  background: var(--s0);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.ege-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.ege-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ege-btn-outline {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.ege-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.ege-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.ege-field input[type='text'],
+.ege-field input[type='email'],
+.ege-field input[type='password'],
+.ege-field input[type='date'],
+.ege-field select,
+.ege-field textarea {
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 14px;
+  background: var(--s0);
+  color: var(--text);
+  font-family: inherit;
+}
+
+.ege-field input:disabled {
+  color: var(--text-dim);
+  background: var(--bg);
+}
+
+.ege-alert {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 14px;
+}
+
+.ege-alert-err {
+  background: color-mix(in srgb, var(--err) 10%, transparent);
+  color: var(--err);
+}
+
+.ege-alert-info {
+  background: color-mix(in srgb, currentColor 6%, transparent);
+}
+
+.ege-muted {
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+.ege-alert-ok {
+  background: color-mix(in srgb, var(--ok) 10%, transparent);
+  color: var(--ok);
+}
+
+.ege-badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+}
+
+.ege-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: var(--s0);
+  border-bottom: 1px solid var(--border);
+}
+
+.ege-nav {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.ege-nav a {
+  text-decoration: none;
+  color: var(--text-dim);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.ege-nav a.active {
+  color: var(--text-h);
+  font-weight: 700;
+}

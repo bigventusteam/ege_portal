@@ -1,0 +1,106 @@
+# EGE Lisans Portalı — üretim dağıtımı.
+#
+# Kullanım:
+#   cd ege_portal/deploy
+#   cp .env.deploy.example .env     # sırları doldurun
+#   docker compose up -d --build
+#
+# `${VAR:?...}` sözdizimi: değişken tanımsız/boşsa compose AÇIKÇA bir
+# hatayla durur — hiçbir sır sessizce boş/varsayılan bir değere DÜŞMEZ.
+
+# Sabit bir alt ağ — `app`in `TRUSTED_PROXIES`i (bkz. app/net.py) Caddy'nin
+# konteyner IP'sini PRECISELY tanıyabilsin diye (Docker'ın varsayılan köprü
+# ağı her `up`ta FARKLI bir alt ağ seçebilir, TRUSTED_PROXIES'te sabit bir
+# CIDR'e güvenmek için bunu BURADA sabitliyoruz). Bu ağdaki TEK dış-erişimli
+# servis Caddy'dir (80/443) — `app`/`db` yalnız bu ağ ÜZERİNDEN konuşur.
+networks:
+  portal_net:
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    networks: [portal_net]
+    environment:
+      POSTGRES_DB: ege_portal
+      POSTGRES_USER: ege_portal
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD tanımlı olmalı}
+    volumes:
+      - portal_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ege_portal -d ege_portal"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Yalnız `app` servisinin erişmesi gerekir — host'a hiç port AÇILMAZ.
+
+  app:
+    build:
+      # `ege_portal/requirements.txt`'teki `-e ../ege_lisans` kardeş dizini
+      # gerektirir — context İKİ ÜST dizin (bkz. deploy/Dockerfile başlığı).
+      context: ../..
+      dockerfile: ege_portal/deploy/Dockerfile
+    restart: unless-stopped
+    networks: [portal_net]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ENVIRONMENT: production
+      DATABASE_URL: postgresql://ege_portal:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD tanımlı olmalı}@db:5432/ege_portal
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY tanımlı olmalı — örn. openssl rand -hex 32}
+      COOKIE_SECURE: "true"
+      ALLOWED_ORIGINS: https://${PORTAL_DOMAIN:-portal.bigventus.com}
+      # Yalnız bu alt ağdaki (yukarıdaki `portal_net`) bağlantılar için
+      # X-Forwarded-For okunur — tek dış-erişimli servis Caddy olduğu için
+      # bu, fiilen "yalnız Caddy'ye güven" anlamına gelir (bkz. app/net.py).
+      TRUSTED_PROXIES: "172.28.0.0/24"
+      BVPAY_URL: ${BVPAY_URL:?BVPAY_URL tanımlı olmalı}
+      BVPAY_API_KEY: ${BVPAY_API_KEY:?BVPAY_API_KEY tanımlı olmalı}
+      EGE_LISANS_OZEL_ANAHTAR: /secrets/ege_lisans_ozel_anahtar.pem
+      LICENSE_GRACE_DAYS: ${LICENSE_GRACE_DAYS:-14}
+    volumes:
+      # İndirme merkezi (bkz. scripts/surum_yayinla.py) — kalıcı, Dockerfile'da
+      # da `/data/releases` olarak tanımlı (PORTAL_RELEASE_DIR ile eşleşir).
+      - portal_releases:/data/releases
+      # Ed25519 ÖZEL anahtarı — host'ta ayrı saklanan bir dosya, salt-okunur
+      # bağlanır (konteyner İÇİNDE asla üretilmez/değiştirilmez).
+      - ${EGE_LISANS_PRIVATE_KEY_PATH:?EGE_LISANS_PRIVATE_KEY_PATH (host'taki özel anahtar dosyasının yolu) tanımlı olmalı}:/secrets/ege_lisans_ozel_anahtar.pem:ro
+    ports:
+      # YALNIZ 127.0.0.1 — host dışından DOĞRUDAN erişilemez, tek giriş
+      # kapısı Caddy'dir (container ağı üzerinden `app:8002`e ulaşır, bu
+      # port eşlemesini HİÇ kullanmaz). Bu, yalnız host üzerinde elle hata
+      # ayıklamak (`curl http://127.0.0.1:8002/healthz`) içindir.
+      - "127.0.0.1:8002:8002"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    networks: [portal_net]
+    depends_on:
+      - app
+    environment:
+      PORTAL_DOMAIN: ${PORTAL_DOMAIN:-portal.bigventus.com}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data       # ACME sertifikaları — kalıcı OLMALI (yoksa her yeniden başlatmada Let's Encrypt'ten yeniden istenir, hız sınırına takılabilir)
+      - caddy_config:/config
+
+volumes:
+  portal_pgdata:
+  portal_releases:
+  caddy_data:
+  caddy_config:
+
+# ── Yedekleme ──────────────────────────────────────────────────────────────
+# `portal_pgdata` (veritabanı) VE `portal_releases` (indirilebilir sürümler)
+# düzenli yedeklenmeli. Örnek (veritabanı, mantıksal dump):
+#   docker compose exec -T db pg_dump -U ege_portal ege_portal | gzip > yedek-$(date +%Y%m%d).sql.gz
+# `EGE_LISANS_PRIVATE_KEY_PATH`teki özel anahtar dosyası AYRI, offline bir
+# yedekte tutulmalı (kasa vb.) — bu compose dosyasının kapsamı dışında.

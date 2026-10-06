@@ -1,0 +1,7 @@
+-r requirements.txt
+pytest==8.3.4
+httpx==0.28.1
+# deploy/docker-compose.yml'yi statik doğrulamak için (bkz. tests/
+# test_deploy_config.py) — yalnız test aracı, uygulama ÇALIŞMA ZAMANINDA
+# kullanmaz.
+PyYAML==6.0.3

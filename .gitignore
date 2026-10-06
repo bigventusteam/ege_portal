@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.env
+*.db
+.pytest_cache/
+.venv/
+venv/
+# frontend/vite.config.ts build.outDir — Dockerfile'ın beklediği konum
+# (bkz. app/main.py SPA sunumu), ama commit edilmeyen bir BUILD çıktısı.
+/static/
+# Yayınlanan paket dosyaları (PORTAL_RELEASE_DIR) — depoya girmez.
+/release_storage/
+*.tsbuildinfo
+*.pem

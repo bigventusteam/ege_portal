@@ -1,0 +1,32 @@
+# EGE Lisans Portalı — Caddy ters vekili (reverse proxy).
+#
+# Otomatik HTTPS: Caddy, {$PORTAL_DOMAIN} için Let's Encrypt sertifikasını
+# KENDİSİ alır/yeniler (ACME HTTP-01 — 80. portun dışarıdan erişilebilir
+# olması YETERLİ, elle hiçbir sertifika işlemi GEREKMEZ). Gerçek alan adı
+# kullanıcı kararıdır (varsayılan örnek: portal.bigventus.com) — env
+# PORTAL_DOMAIN ile değiştirilir (bkz. docker-compose.yml).
+{$PORTAL_DOMAIN:portal.bigventus.com} {
+    encode zstd gzip
+
+    # Güvenlik başlıkları (2026-10-05 canlıya hazırlık görevi) — frontend'i
+    # (ve API'yi — tek origin, bkz. app/main.py'deki SPA sunumu) sunan TEK
+    # katman burası. `style-src` 'unsafe-inline' GEREKİR: frontend'in
+    # tamamı `style={{...}}` (React inline stil) kullanıyor — bu, CSP'de
+    # `<script>` ile AYNI "inline" kategorisi DEĞİL, ayrı bir direktif
+    # (`style-src`); `script-src` 'unsafe-inline' OLMADAN kalır (build
+    # çıktısı inline <script> İÇERMEZ, bkz. frontend/vite.config.ts build'i
+    # — yalnız hash'li harici dosyalar).
+    header {
+        Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        X-Frame-Options "DENY"
+        -Server
+    }
+
+    # `app` — docker-compose servis adı, Docker'ın dahili DNS'i üzerinden
+    # çözülür (host'taki `127.0.0.1:8002` port eşlemesinden BAĞIMSIZ, bkz.
+    # docker-compose.yml'deki notu — o yalnız host'tan elle hata ayıklama
+    # içindir, Caddy container ağı üzerinden konuşur).
+    reverse_proxy app:8002
+}
