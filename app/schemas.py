@@ -156,9 +156,9 @@ class TrialGrantResponse(BaseModel):
 
 
 class SubscriptionPlanItemSummary(BaseModel):
+    # `tier` yok: kademe yok, her lisans tam sürüm (bkz. app/models.py::TAM_SURUM_TIER).
     product_code: str
     product_name: str
-    tier: str
 
 
 class SubscriptionActivationSummary(BaseModel):
@@ -205,9 +205,9 @@ class LicenseDocumentResponse(BaseModel):
 
 
 class PlanItemResponse(BaseModel):
+    # `tier` yok: kademe yok, her lisans tam sürüm (bkz. app/models.py::TAM_SURUM_TIER).
     product_code: str
     product_name: str
-    tier: str
 
 
 class PlanPriceResponse(BaseModel):

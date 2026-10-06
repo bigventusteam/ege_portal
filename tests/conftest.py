@@ -109,7 +109,7 @@ def plan_pro(db: Session, urun_mapege: Product) -> Plan:
     plan = Plan(code="mapege-pro", name="mapEGE Pro")
     db.add(plan)
     db.flush()
-    db.add(PlanItem(plan_id=plan.id, product_id=urun_mapege.id, tier="pro"))
+    db.add(PlanItem(plan_id=plan.id, product_id=urun_mapege.id, tier="full"))
     db.commit()
     db.refresh(plan)
     return plan

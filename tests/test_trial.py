@@ -177,7 +177,7 @@ def test_deneme_lisansi_uretilir(db, musteri, urun_mapege, urun_sisege, fake_imz
     assert doc["payload"]["license_type"] == "trial"
     assert doc["payload"]["grace_days"] == 0
     assert set(doc["payload"]["products"]) == {"mapege", "sisege"}
-    assert all(p["tier"] == "pro" for p in doc["payload"]["products"].values())
+    assert all(p["tier"] == "full" for p in doc["payload"]["products"].values())
 
     beklenen_bitis = (datetime.now(timezone.utc) + timedelta(days=7)).date().isoformat()
     assert doc["payload"]["expires"] == beklenen_bitis

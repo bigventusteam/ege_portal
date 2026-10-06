@@ -10,9 +10,9 @@ import type { SubscriptionResponse } from '../types'
 const ORNEK_ABONELIK: SubscriptionResponse = {
   id: 7,
   plan_id: 1,
-  plan_code: 'mapege-pro',
-  plan_name: 'mapEGE Pro',
-  items: [{ product_code: 'mapege', product_name: 'mapEGE', tier: 'pro' }],
+  plan_code: 'mapege',
+  plan_name: 'mapEGE Abonelik',
+  items: [{ product_code: 'mapege', product_name: 'mapEGE' }],
   status: 'active',
   current_period_end: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString(),
   activations: [],
@@ -46,7 +46,7 @@ describe('Subscriptions', () => {
   test('abonelik ve verilen lisanslar listelenir', async () => {
     vi.spyOn(api, 'get').mockResolvedValue([ORNEK_ABONELIK])
     render(<Ekran />)
-    await waitFor(() => expect(screen.getByText('mapEGE Pro')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('mapEGE Abonelik')).toBeInTheDocument())
     expect(screen.getByText(/lic_abc123/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Yeniden İndir' })).toBeInTheDocument()
   })

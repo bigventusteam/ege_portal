@@ -224,8 +224,15 @@ class Plan(Base):
     prices: Mapped[list["Price"]] = relationship(back_populates="plan")
 
 
+# Kademe YOK (kullanıcı kararı 2026-10-06): üç üründe de lisans = tam sürüm.
+# İmzalı şema v2 `products.<kod>.tier` alanını zorunlu tuttuğu için alan
+# kalır, değeri her zaman bu sabittir (bkz. PLAN.md §8).
+TAM_SURUM_TIER = "full"
+
+
 class PlanItem(Base):
-    """Bir Plan'ın taşıdığı ürün+kademe satırlarından biri."""
+    """Bir Plan'ın taşıdığı ürün satırlarından biri. `tier` her zaman
+    `TAM_SURUM_TIER` — kademe yok, alan yalnız lisans şeması uyumluluğu için."""
 
     __tablename__ = "plan_items"
     __table_args__ = (UniqueConstraint("plan_id", "product_id", name="uq_plan_items_plan_product"),)
@@ -233,7 +240,7 @@ class PlanItem(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     plan_id: Mapped[int] = mapped_column(ForeignKey("plans.id"))
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
-    tier: Mapped[str] = mapped_column(String(30))
+    tier: Mapped[str] = mapped_column(String(30), default=TAM_SURUM_TIER, server_default=TAM_SURUM_TIER)
 
     plan: Mapped[Plan] = relationship(back_populates="items")
     product: Mapped[Product] = relationship()

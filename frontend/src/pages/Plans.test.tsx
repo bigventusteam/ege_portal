@@ -16,9 +16,9 @@ function KonumGoster() {
 const ORNEK_PLANLAR: Plan[] = [
   {
     id: 1,
-    code: 'mapege-pro',
-    name: 'mapEGE Pro',
-    items: [{ product_code: 'mapege', product_name: 'mapEGE', tier: 'pro' }],
+    code: 'mapege',
+    name: 'mapEGE Abonelik',
+    items: [{ product_code: 'mapege', product_name: 'mapEGE' }],
     prices: [
       { months: 12, net: '12000.00', vat_rate: '20.00', vat_amount: '2400.00', total: '14400.00', currency: '949' },
     ],
@@ -50,9 +50,17 @@ describe('Plans', () => {
     vi.spyOn(api, 'get').mockResolvedValue(ORNEK_PLANLAR)
     render(<Ekran />)
 
-    await waitFor(() => expect(screen.getByText('mapEGE Pro')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('mapEGE Abonelik')).toBeInTheDocument())
     expect(screen.getByText(/14\.400,00 ₺/)).toBeInTheDocument()
     expect(screen.queryByText(/949/)).not.toBeInTheDocument()
+  })
+
+  test('kademe gösterilmez — her ürün "Tam sürüm"', async () => {
+    vi.spyOn(api, 'get').mockResolvedValue(ORNEK_PLANLAR)
+    render(<Ekran />)
+
+    expect(await screen.findByText('mapEGE · Tam sürüm')).toBeInTheDocument()
+    expect(screen.queryByText(/\b(pro|standard|lite|full)\b/i)).not.toBeInTheDocument()
   })
 
   test('boş liste geldiğinde bilgi mesajı gösterilir', async () => {

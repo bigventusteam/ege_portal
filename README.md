@@ -128,9 +128,16 @@ devre dışı bırakılınca ikinci senaryo (aynı siparişe iki farklı ödeme)
   karşılaştırılan tutar hâlâ `total` (davranış değişmedi, yalnız artık
   doğru hesaplanıyor). `OrderResponse` bu kırılımın tamamını döndürür.
 - **Sipariş tek `plan_id` taşımaya devam ediyor** — paketler zaten `Plan`ın
-  birden çok `PlanItem` (ürün+kademe) taşıyabilmesiyle çözülüyor; PLAN.md
-  §1'deki "mapEGE Pro + sisEGE Standard + colEGE, 12 ay" örneği bir PAKET
-  PLANI olarak okunmalı, çok kalemli bir sepet değil.
+  birden çok `PlanItem` (ürün) taşıyabilmesiyle çözülüyor; "mapEGE +
+  sisEGE + colEGE, 12 ay" gibi bir paket bir PAKET PLANI olarak okunmalı, çok
+  kalemli bir sepet değil.
+- **Kademe yok — lisans tam sürüm** (kullanıcı kararı 2026-10-06, PLAN.md §8
+  madde 2). `PlanItem.tier` yalnız imzalı şema v2 uyumluluğu için duruyor,
+  değeri her zaman `"full"` (`app/models.py::TAM_SURUM_TIER`); lisans
+  üreten kod DB değerine bakmadan `"full"` yazar, API yanıtları tier taşımaz.
+  Yayın sırası: bu sürüm, mapEGE'nin v2 lisansta tier'dan bağımsız tam sürüm
+  kabulü sahaya çıkmadan yayınlanmaz (mapEGE tanımadığı tier'ı `lite`
+  sayıyordu).
 - **Ödeme doğrulama webhook gövdesine güvenmez** (PLAN.md §5.1 madde 3).
   `POST /api/v1/webhooks/bvpay` gövdesinden yalnızca `payment_id` ve bir
   `order_id` İPUCU okur; asıl doğru `passthrough.order_id` bvpay'den taze
@@ -200,7 +207,7 @@ devre dışı bırakılınca ikinci senaryo (aynı siparişe iki farklı ödeme)
   `app/services/offline_activation.py`) — abonelikteki HER ürün için tam
   olarak bir `activation_request` dosyası (ege_lisans'ın kendi ürettiği
   biçim) bekler, `ege_lisans.signing.build_v2_payload` ile ürün başına
-  `tier` + `fingerprint.components` taşıyan tek bir v2 belge kurar (paket
+  `tier` (her zaman `"full"`) + `fingerprint.components` taşıyan tek bir v2 belge kurar (paket
   satışında ürünler farklı makinelerde olabildiği için — bkz. ege_lisans
   README). IDOR koruması sisEGE'deki desenle aynı: abonelik yoksa VEYA
   başka bir müşteriye aitse ikisi de aynı 404'ü döner (bkz.

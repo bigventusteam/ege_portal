@@ -59,6 +59,7 @@ from sqlalchemy.orm import Session
 
 from app.licensing import LisansImzalayici
 from app.models import (
+    TAM_SURUM_TIER,
     AuditEvent,
     Customer,
     Product,
@@ -71,7 +72,7 @@ from app.models import (
 )
 from app.services.activation_request import InvalidActivationRequestError, parse_activation_request
 
-TRIAL_TIER = "pro"  # PLAN.md §8 madde 7: "ürünün tamamı denensin"
+TRIAL_TIER = TAM_SURUM_TIER  # kademe yok — deneme de tam sürüm (PLAN.md §8)
 TRIAL_GRACE_DAYS = 0
 
 __all__ = [

@@ -57,7 +57,7 @@ def test_eszamanli_iki_dogrulama_kaybeden_integrity_error_yakalayip_idempotent_d
         plan = Plan(code="mapege-pro-yaris", name="mapEGE Pro")
         kurulum.add(plan)
         kurulum.flush()
-        kurulum.add(PlanItem(plan_id=plan.id, product_id=urun.id, tier="pro"))
+        kurulum.add(PlanItem(plan_id=plan.id, product_id=urun.id, tier="full"))
 
         kurulum.add(
             Price(

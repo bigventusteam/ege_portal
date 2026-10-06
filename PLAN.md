@@ -53,9 +53,9 @@ PostgreSQL (geliştirmede SQLite), React 19 + Vite + Tailwind.
     "subscription_id": "sub_…",
     "customer": {"id": "cus_…", "name": "…", "email": "…"},
     "products": {
-      "mapege": {"tier": "pro",      "fingerprint": {"components": {"instance_id": "…", "machine_id": "…"}}},
-      "sisege": {"tier": "standard", "fingerprint": {"components": {"instance_id": "…", "machine_id": "…"}}},
-      "colege": {"tier": "standard", "fingerprint": {"components": {"instance_id": "…", "machine_id": "…"}}}
+      "mapege": {"tier": "full", "fingerprint": {"components": {"instance_id": "…", "machine_id": "…"}}},
+      "sisege": {"tier": "full", "fingerprint": {"components": {"instance_id": "…", "machine_id": "…"}}},
+      "colege": {"tier": "full", "fingerprint": {"components": {"instance_id": "…", "machine_id": "…"}}}
     },
     "issued": "2026-10-01",
     "expires": "2027-10-01",
@@ -224,7 +224,7 @@ imzasının portala OTOMATİK yüklenmesi — bu turda yükleme yalnız
 | **F4 Çevrimiçi aktivasyon** | Aktivasyon API'si, ürün tarafında anahtar girişi + günlük yenileme, koltuk/makine yönetimi | F2 |
 | **F5 İndirme merkezi** | Sürüm yükleme, imzalı manifest, yetkili indirme — temel uçlar + personel yayınla/yayından kaldır bitti (2026-10-06, bkz. §5.4); indirme hakkı = oturum açmış her müşteri; kısa ömürlü imzalı URL, indirme sayfası (frontend) ve paketleme çıktılarının otomatik yüklenmesi açık | F2 |
 | **F5b Dağıtım tek kaynağı** | Test ve üretim sunucusu kaynağı depodaki `paket_tanimi.json` + `scripts/paket_secimi.py` ile seçsin (bugün sunucuda ayrı, kapalı bir allowlist var; yeni modüller sessizce düşüyor). Şartlar: tanım ve kod aynı commit'te değişir, CI her commit'te `paket_secimi.py` koşar, sunucu "bu tanım bu commit'te uygulanamıyor" diye reddedebilir. Geliştirme araçları (`gelistirme_lisansi_uret.py`, senkron betikleri) paketlere girmez. sisEGE ve colEGE'de henüz `paket_tanimi.json` yok (yalnız mapEGE'de var). Konteyner dağıtım şartları (2026-09-27 sunucu testinden): her üründe lisans/deneme dizini kalıcı ve servisler arası paylaşımlı volume'de (aksi hâlde recreate denemeyi sıfırlar); sabit `hostname:` ve host `/etc/machine-id` salt-okunur bağlaması (aksi hâlde recreate sonrası parmak izi eşleşmez); `network_mode: service:mapege` kullanan servisler mapege recreate edilince yeniden oluşturulmalı ve healthcheck taşımalı | F5 |
-| **F6 Üretime hazırlık** | Bitiş hatırlatma e-postaları, e-fatura/e-arşiv, mesafeli satış sözleşmesi + KVKK metinleri, Authenticode kod imzalama, portal barındırma/domain | F3–F5 |
+| **F6 Üretime hazırlık** | Bitiş hatırlatma e-postaları, e-fatura/e-arşiv, mesafeli satış sözleşmesi + KVKK metinleri, Authenticode kod imzalama, portal barındırma/domain; **yayın sırası:** portalın tier="full" üreten sürümü ancak mapEGE'nin v2 lisansta tier'dan bağımsız tam sürüm kabulü sahaya çıktıktan sonra yayınlanır (bkz. §8 madde 2) | F3–F5 |
 
 F3 bvpay'in banka bilgilerini beklerken mock modda geliştirilebilir.
 
@@ -237,7 +237,24 @@ F3 bvpay'in banka bilgilerini beklerken mock modda geliştirilebilir.
    **Karar (2026-10-05):** 1 aylık ve 12 aylık paketler AYRI fiyatlanır
    (her plan için iki `Price` satırı, months=1 ve months=12). 7 günlük
    deneme ayrıca verilir (ücretsiz, §8 madde 7). Tutarlar henüz belirlenmedi.
-2. ~~**sisEGE ve colEGE kademeleri**~~ — **Karar (2026-10-05):** sisEGE ve
+2. ~~**sisEGE ve colEGE kademeleri**~~ — **KAPANDI. Karar (2026-10-06,
+   kullanıcı): Kademe yok — lisans tam sürüm; `tier` alanı şema uyumluluğu
+   için `"full"`.** Üç üründe de (mapEGE dahil) satın alınan lisans ürünün
+   tamamını açar. İmzalı şema v2 `products.<kod>.tier` alanını zorunlu
+   tuttuğu için alan kalır, değeri her zaman `"full"` (`app/models.py::
+   TAM_SURUM_TIER`): `PlanItem.tier` varsayılanı `"full"`, mevcut satırlar
+   migration `5d2a7c4e1f93` ile `"full"`a çevrildi (yalnız UPDATE); çevrimdışı
+   aktivasyon ve deneme lisansı DB'deki değere bakmadan `"full"` yazar; API
+   yanıtları ve arayüz tier göstermez ("Tam sürüm"). Katalog: ürün başına tek
+   plan (+ paket planları), plan/fiyat kodunda tier'a göre dallanma yok.
+   **Yayın sırası bağımlılığı:** mapEGE şema v2 lisansta tanımadığı tier'ı
+   fail-closed `lite` sayıyordu (`services/licensing.py::
+   _effective_mode_from_license`). Portalın `"full"` üreten sürümü, mapEGE'nin
+   "geçerli v2 lisansta tier'a bakma → pro" değişikliği main'e girip sahaya
+   çıkmadan YAYINLANMAZ — aksi hâlde ödeme yapan her mapEGE müşterisi lite
+   modda kalır. `MAPEGE_MODE` dağıtım tavanı ve v1 lisansların `mode`'u
+   aynen geçerli. Önceki karar (2026-10-05, aşağıda) bununla AŞILDI:
+   **Karar (2026-10-05):** sisEGE ve
    colEGE'de kademe YOK: ürünü satın alan tüm özellikleri kullanır (lisansta
    tek kademe, ürünler kademeye göre özellik kapatmaz). mapEGE'nin
    lite/standard/pro kademeleri aynen kalır. Eski soru: mapEGE'deki lite/standard/pro'nun bu iki üründeki

@@ -38,7 +38,7 @@ export function Plans() {
           <div style={{ marginBottom: 12 }}>
             {plan.items.map((item) => (
               <span key={item.product_code} className="ege-badge" style={{ marginRight: 6 }}>
-                {item.product_name} · {item.tier}
+                {item.product_name} · {strings.planlar.tamSurum}
               </span>
             ))}
           </div>

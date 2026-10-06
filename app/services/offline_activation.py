@@ -68,7 +68,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.licensing import LisansImzalayici
-from app.models import Activation, ActivationMode, AuditEvent, IssuedLicense, Subscription
+from app.models import TAM_SURUM_TIER, Activation, ActivationMode, AuditEvent, IssuedLicense, Subscription
 from app.services.activation_request import InvalidActivationRequestError, parse_activation_request
 from app.services.licenses import get_or_create_license_key
 
@@ -244,7 +244,8 @@ def create_offline_license(
     products_payload: dict[str, dict] = {}
     for code, item in beklenen.items():
         products_payload[code] = {
-            "tier": item.tier,
+            # Kademe yok: DB satırına bakılmaz, her zaman tam sürüm.
+            "tier": TAM_SURUM_TIER,
             "fingerprint_components": istekler[code]["fingerprint"]["components"],
         }
 

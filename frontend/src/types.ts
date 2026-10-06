@@ -9,10 +9,10 @@ export interface TokenYaniti {
   is_staff: boolean
 }
 
+// `tier` yok: kademe yok, her lisans tam sürüm (backend app/models.py::TAM_SURUM_TIER).
 export interface PlanItem {
   product_code: string
   product_name: string
-  tier: string
 }
 
 export interface PlanPrice {
@@ -62,7 +62,6 @@ export interface OrderResponse {
 export interface SubscriptionPlanItemSummary {
   product_code: string
   product_name: string
-  tier: string
 }
 
 export interface SubscriptionActivationSummary {

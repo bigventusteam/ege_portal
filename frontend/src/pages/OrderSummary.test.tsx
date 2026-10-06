@@ -10,9 +10,9 @@ import type { OrderResponse, Plan } from '../types'
 const ORNEK_PLANLAR: Plan[] = [
   {
     id: 1,
-    code: 'mapege-pro',
-    name: 'mapEGE Pro',
-    items: [{ product_code: 'mapege', product_name: 'mapEGE', tier: 'pro' }],
+    code: 'mapege',
+    name: 'mapEGE Abonelik',
+    items: [{ product_code: 'mapege', product_name: 'mapEGE' }],
     prices: [
       { months: 12, net: '12000.00', vat_rate: '20.00', vat_amount: '2400.00', total: '14400.00', currency: '949' },
     ],
@@ -59,7 +59,7 @@ describe('OrderSummary', () => {
   test('önizleme KDV kırılımını sunucudan geldiği gibi gösterir (istemci hesaplamaz)', async () => {
     vi.spyOn(api, 'get').mockResolvedValue(ORNEK_PLANLAR)
     render(Ekran())
-    await waitFor(() => expect(screen.getByText('mapEGE Pro')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('mapEGE Abonelik')).toBeInTheDocument())
     expect(screen.getByText(/14\.400,00 ₺/)).toBeInTheDocument()
     expect(screen.queryByText(/949/)).not.toBeInTheDocument()
   })

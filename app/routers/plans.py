@@ -24,7 +24,7 @@ def planlari_listele(db: Session = Depends(get_db)) -> list[PlanResponse]:
     sonuc: list[PlanResponse] = []
     for plan in plans:
         items = [
-            PlanItemResponse(product_code=item.product.code, product_name=item.product.name, tier=item.tier)
+            PlanItemResponse(product_code=item.product.code, product_name=item.product.name)
             for item in plan.items
         ]
         prices = []

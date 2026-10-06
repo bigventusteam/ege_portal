@@ -32,7 +32,7 @@ def _abonelik_getir(db: Session, subscription_id: int, user: User) -> Subscripti
 
 def _abonelik_yanitina_cevir(subscription: Subscription) -> SubscriptionResponse:
     items = [
-        SubscriptionPlanItemSummary(product_code=item.product.code, product_name=item.product.name, tier=item.tier)
+        SubscriptionPlanItemSummary(product_code=item.product.code, product_name=item.product.name)
         for item in subscription.plan.items
     ]
 

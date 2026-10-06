@@ -46,6 +46,7 @@ export const strings = {
     kdvOrani: 'KDV oranı',
     kdvDahilToplam: 'KDV dahil toplam',
     siparisVer: 'Sipariş Ver',
+    tamSurum: 'Tam sürüm',
     hata: 'Planlar yüklenemedi.',
   },
   siparis: {

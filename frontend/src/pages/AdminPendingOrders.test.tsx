@@ -12,7 +12,7 @@ const ORNEK_SIPARIS: AdminOrderResponse = {
   customer_id: 3,
   customer_name: 'Test Belediyesi',
   plan_id: 1,
-  plan_name: 'mapEGE Pro',
+  plan_name: 'mapEGE Abonelik',
   months: 12,
   net: '12000.00',
   vat_rate: '20.00',

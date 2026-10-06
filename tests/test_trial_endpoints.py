@@ -165,7 +165,7 @@ def test_basarili_deneme_200_doner(client, kullanici, auth_headers, urun_mapege,
     doc = resp.json()
     assert doc["payload"]["license_type"] == "trial"
     assert doc["payload"]["grace_days"] == 0
-    assert all(p["tier"] == "pro" for p in doc["payload"]["products"].values())
+    assert all(p["tier"] == "full" for p in doc["payload"]["products"].values())
 
 
 def test_ikinci_deneme_409_doner(client, kullanici, auth_headers, urun_mapege):
@@ -213,7 +213,7 @@ def test_ucdan_uca_deneme_lisansi_valid_ve_trial_doner(client, kullanici, auth_h
     ctx = LicenseContext(product="mapege", public_keys=(public_key_hex,), data_dir=tmp_path / "data")
     sonuc = validate_license(doc, ctx, fingerprint=MAPEGE_FP)
     assert sonuc["state"] == "valid", sonuc
-    assert sonuc["tier"] == "pro"
+    assert sonuc["tier"] == "full"
     # ege_lisans artık license_type'ı doğrulama sonucunda da döndürüyor
     # (worker_1'in eklediği alan) — GERÇEK doğrulama sonucundan kontrol.
     assert sonuc["license_type"] == "trial"

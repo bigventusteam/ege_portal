@@ -56,8 +56,9 @@ def paket_plan(db, urun_mapege, urun_sisege):
     plan = Plan(code="paket-pro", name="mapEGE Pro + sisEGE Standard")
     db.add(plan)
     db.flush()
+    # Eski bir kademe değeri DB'de kalmış olsa bile lisans "full" üretilmeli.
     db.add(PlanItem(plan_id=plan.id, product_id=urun_mapege.id, tier="pro"))
-    db.add(PlanItem(plan_id=plan.id, product_id=urun_sisege.id, tier="standard"))
+    db.add(PlanItem(plan_id=plan.id, product_id=urun_sisege.id))
     db.commit()
     db.refresh(plan)
     return plan
@@ -116,9 +117,9 @@ def test_ucdan_uca_lisans_ege_lisans_ile_dogrulanir(
     assert doc["payload"]["expires"] == aktif_abonelik.current_period_end.date().isoformat()
     assert doc["payload"]["grace_days"] == 14
 
-    # GERÇEK ege_lisans doğrulaması — her ürün kendi tier'ı ve kendi
-    # parmak iziyle "valid" dönmeli.
-    for product, tier, fp in [("mapege", "pro", MAPEGE_FP), ("sisege", "standard", SISEGE_FP)]:
+    # GERÇEK ege_lisans doğrulaması — her ürün kendi parmak iziyle "valid";
+    # kademe yok, tier her üründe "full".
+    for product, tier, fp in [("mapege", "full", MAPEGE_FP), ("sisege", "full", SISEGE_FP)]:
         ctx = LicenseContext(product=product, public_keys=(public_key_hex,), data_dir=tmp_path / f"data_{product}")
         sonuc = validate_license(doc, ctx, fingerprint=fp)
         assert sonuc["state"] == "valid", sonuc

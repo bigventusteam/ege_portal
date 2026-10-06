@@ -10,9 +10,9 @@ import type { SubscriptionResponse } from '../types'
 const ORNEK_ABONELIK: SubscriptionResponse = {
   id: 7,
   plan_id: 1,
-  plan_code: 'mapege-pro',
-  plan_name: 'mapEGE Pro',
-  items: [{ product_code: 'mapege', product_name: 'mapEGE', tier: 'pro' }],
+  plan_code: 'mapege',
+  plan_name: 'mapEGE Abonelik',
+  items: [{ product_code: 'mapege', product_name: 'mapEGE' }],
   status: 'active',
   current_period_end: '2027-01-01T00:00:00Z',
   activations: [],

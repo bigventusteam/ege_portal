@@ -18,7 +18,8 @@ def test_oturumsuz_erisilebilir_ve_fiyat_kdv_dahil_hesaplanir(client, plan_pro, 
 
     plan = body[0]
     assert plan["code"] == "mapege-pro"
-    assert plan["items"] == [{"product_code": "mapege", "product_name": "mapEGE", "tier": "pro"}]
+    # Kademe yok — yanıt tier taşımaz.
+    assert plan["items"] == [{"product_code": "mapege", "product_name": "mapEGE"}]
     assert len(plan["prices"]) == 1
     fiyat = plan["prices"][0]
     assert fiyat["months"] == 12

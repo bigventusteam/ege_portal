@@ -58,7 +58,7 @@ def _hazirla(SessionLocal):
     m = Customer(name="Yarış", email="y@example.com"); s.add(m); s.flush()
     u = Product(code="mapege", name="mapEGE"); s.add(u); s.flush()
     p = Plan(code="pro", name="Pro"); s.add(p); s.flush()
-    s.add(PlanItem(plan_id=p.id, product_id=u.id, tier="pro"))
+    s.add(PlanItem(plan_id=p.id, product_id=u.id, tier="full"))
     s.add(Price(plan_id=p.id, months=12, amount=Decimal("12000.00"), currency="949",
                 vat_rate=Decimal("20.00"), valid_from=datetime.now(timezone.utc) - timedelta(days=1)))
     s.commit()

@@ -58,7 +58,7 @@ export function Subscriptions() {
           <p>
             {strings.abonelikler.bitisTarihi}: {new Date(sub.current_period_end).toLocaleDateString('tr-TR')}
           </p>
-          <p>{strings.abonelikler.urunler}: {sub.items.map((i) => `${i.product_name} (${i.tier})`).join(', ')}</p>
+          <p>{strings.abonelikler.urunler}: {sub.items.map((i) => `${i.product_name} (${strings.planlar.tamSurum})`).join(', ')}</p>
 
           <h3>{strings.abonelikler.lisanslar}</h3>
           {sub.issued_licenses.length === 0 && <p>{strings.abonelikler.lisansYok}</p>}
