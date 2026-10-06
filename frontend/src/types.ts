@@ -32,6 +32,18 @@ export interface Plan {
   prices: PlanPrice[]
 }
 
+export interface MeResponse {
+  user_id: number
+  customer_id: number
+  customer_name: string
+  email: string
+  is_staff: boolean
+}
+
+export interface TrialSettingsResponse {
+  days: number
+}
+
 export interface OrderResponse {
   id: number
   customer_id: number

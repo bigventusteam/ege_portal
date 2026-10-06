@@ -1,19 +1,22 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 
 /**
  * Bu store GÜVENLİK SINIRI DEĞİL — yalnız arayüzün "oturum açık mı, kime
  * ait" göstergesi. Gerçek doğrulama HER ZAMAN backend'deki HttpOnly oturum
  * çerezidir (bkz. api/client.ts başlık yorumu); burada SIR/token hiç
- * TUTULMAZ, yalnız görüntü amaçlı `userId`/`customerId`/`email` — bunlar
- * localStorage'da görünse bile başlı başına bir yetki vermez (çerez
- * olmadan hiçbir API isteği oturum gerektiren bir uca geçemez). Çerez
- * sunucu tarafında süresi dolmuş/geçersizse ilk API çağrısı 401 döner ve
- * `api/client.ts::onSessionExpired` bu store'u temizler (bkz. main.tsx).
+ * TUTULMAZ.
  *
- * `isStaff` de AYNI şekilde yalnız GÖSTERİM amaçlı (Personel menüsünü
- * göster/gizle, yetkisiz rotada 404 göster) — gerçek yetki kontrolü HER
- * personel ucunda backend'deki `require_staff`dir (bkz. StaffRoute.tsx).
+ * localStorage'a YAZILMAZ: sayfa her açıldığında oturum
+ * `GET /api/v1/auth/me`'den kurulur (bkz. components/OturumYukleyici.tsx).
+ * Eskiden persist ediliyordu; çerez geçerli ama localStorage silinmişse
+ * kullanıcı "çıkış yapmış" görünüyor, tersi durumda da geçersiz bir oturum
+ * ilk 401'e kadar "açık" görünüyordu.
+ *
+ * `durum`: 'bilinmiyor' iken /auth/me henüz dönmedi — korumalı sayfalar
+ * bu sürede yönlendirme yapmaz, bekler (bkz. ProtectedRoute/StaffRoute).
+ *
+ * `isStaff` de yalnız GÖSTERİM amaçlı — gerçek yetki kontrolü HER personel
+ * ucunda backend'deki `require_staff`dir (bkz. StaffRoute.tsx).
  */
 export interface OturumKullanicisi {
   userId: number
@@ -22,19 +25,18 @@ export interface OturumKullanicisi {
   isStaff: boolean
 }
 
+export type OturumDurumu = 'bilinmiyor' | 'hazir'
+
 interface AuthState {
   user: OturumKullanicisi | null
+  durum: OturumDurumu
   setUser: (user: OturumKullanicisi) => void
   clear: () => void
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
-      setUser: (user) => set({ user }),
-      clear: () => set({ user: null }),
-    }),
-    { name: 'ege-portal-auth' },
-  ),
-)
+export const useAuthStore = create<AuthState>()((set) => ({
+  user: null,
+  durum: 'bilinmiyor',
+  setUser: (user) => set({ user, durum: 'hazir' }),
+  clear: () => set({ user: null, durum: 'hazir' }),
+}))

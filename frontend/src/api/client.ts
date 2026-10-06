@@ -49,7 +49,10 @@ export function onSessionExpired(cb: OturumDustuCallback): void {
   oturumDustuCallback = cb
 }
 
-const OTURUM_ACMA_YOLLARI = ['/api/v1/auth/login', '/api/v1/auth/register']
+// Bu yolların 401'i bir "oturum düştü" olayı DEĞİL: giriş/kayıtta yanlış
+// parola, /auth/me'de ise "henüz oturum açılmamış" (açılışta herkes için
+// sorulur — herkese açık Ürünler sayfasından /giris'e atmamalı).
+const OTURUM_ACMA_YOLLARI = ['/api/v1/auth/login', '/api/v1/auth/register', '/api/v1/auth/me']
 
 async function hataFirlat(resp: Response): Promise<never> {
   let detail: unknown = null

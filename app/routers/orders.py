@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models import User
+from app.models import Order, User
 from app.routers.auth import get_current_user
 from app.schemas import OrderCreateRequest, OrderResponse
 from app.services.orders import CustomerNotFoundError, InvalidQuantityError, PlanNotFoundError, create_order
@@ -35,3 +36,13 @@ def siparis_olustur(
     except InvalidQuantityError as e:
         raise HTTPException(422, str(e)) from e
     return OrderResponse.model_validate(order)
+
+
+@router.get("/orders", response_model=list[OrderResponse])
+def siparislerimi_listele(db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> list[OrderResponse]:
+    """Oturumdaki kullanıcının KENDİ müşterisinin siparişleri, yeniden
+    eskiye. `customer_id` istekten değil oturumdan gelir (IDOR yok)."""
+    orders = db.scalars(
+        select(Order).where(Order.customer_id == user.customer_id).order_by(Order.created_at.desc(), Order.id.desc())
+    ).all()
+    return [OrderResponse.model_validate(o) for o in orders]

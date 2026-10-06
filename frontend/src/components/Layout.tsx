@@ -34,6 +34,7 @@ export function Layout() {
           </NavLink>
           {user && (
             <>
+              <NavLink to="/siparislerim">{strings.nav.siparislerim}</NavLink>
               <NavLink to="/aboneliklerim">{strings.nav.aboneliklerim}</NavLink>
               <NavLink to="/aktivasyon">{strings.nav.aktivasyon}</NavLink>
               <NavLink to="/indirmeler">{strings.nav.indirmeler}</NavLink>

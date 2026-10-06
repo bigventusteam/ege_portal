@@ -1,15 +1,19 @@
 import { useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { api, hataGoster } from '../api/client'
 import { strings } from '../strings'
 import { MAX_ACTIVATION_REQUEST_BAYT, blobIndir, jsonBlobOlustur } from '../lib/download'
-import type { LicenseDocumentResponse } from '../types'
+import type { LicenseDocumentResponse, TrialSettingsResponse } from '../types'
 
 export function Trial() {
   const [dosyalar, setDosyalar] = useState<File[]>([])
   const [dosyaHatasi, setDosyaHatasi] = useState<string | null>(null)
   const [basarili, setBasarili] = useState(false)
+  const { data: denemeAyari } = useQuery({
+    queryKey: ['trial-settings'],
+    queryFn: () => api.get<TrialSettingsResponse>('/api/v1/trial-settings'),
+  })
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -45,6 +49,7 @@ export function Trial() {
     <div className="ege-card" style={{ maxWidth: 560 }}>
       <h1>{strings.deneme.baslik}</h1>
       <p>{strings.deneme.aciklama}</p>
+      {denemeAyari && <p>{strings.deneme.sure(denemeAyari.days)}</p>}
       <form onSubmit={gonder}>
         <div className="ege-field">
           <label htmlFor="deneme-dosya">{strings.deneme.dosyaSec}</label>

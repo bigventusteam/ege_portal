@@ -11,10 +11,14 @@ import { OfflineActivation } from './pages/OfflineActivation'
 import { Downloads } from './pages/Downloads'
 import { Trial } from './pages/Trial'
 import { AdminPendingOrders } from './pages/AdminPendingOrders'
+import { Orders } from './pages/Orders'
+import { OturumYukleyici } from './components/OturumYukleyici'
 
 export default function App() {
   return (
-    <Routes>
+    <>
+      <OturumYukleyici />
+      <Routes>
       <Route path="/giris" element={<Login />} />
       <Route path="/kayit" element={<Register />} />
       <Route element={<Layout />}>
@@ -24,6 +28,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <OrderSummary />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/siparislerim"
+          element={
+            <ProtectedRoute>
+              <Orders />
             </ProtectedRoute>
           }
         />
@@ -69,6 +81,7 @@ export default function App() {
         />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+    </>
   )
 }

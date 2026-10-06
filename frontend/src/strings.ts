@@ -5,6 +5,7 @@
 export const strings = {
   nav: {
     urunler: 'Ürünler',
+    siparislerim: 'Siparişlerim',
     aboneliklerim: 'Aboneliklerim',
     aktivasyon: 'Çevrimdışı Aktivasyon',
     indirmeler: 'İndirmeler',
@@ -118,13 +119,37 @@ export const strings = {
     baslik: 'Deneme Lisansı',
     aciklama:
       'Denemek istediğiniz her ürünün "Lisans" ekranından indirdiğiniz activation_request.json dosyasını yükleyin.',
+    sure: (gun: number) => `Size tanımlı deneme süresi: ${gun} gün.`,
     dosyaSec: 'activation_request.json dosyaları seçin',
     gonder: 'Deneme Lisansı Üret',
     gonderiliyor: 'Deneme lisansı üretiliyor…',
     basarili: 'Deneme license.json indirildi.',
     dosyaCokBuyuk: (ad: string) => `"${ad}" çok büyük (en çok 16 KB olmalı).`,
   },
+  siparisler: {
+    baslik: 'Siparişlerim',
+    yukleniyor: 'Siparişler yükleniyor…',
+    bos: 'Henüz bir siparişiniz yok.',
+    siparisNo: 'Sipariş No',
+    tarih: 'Tarih',
+    sure: 'Süre',
+    ay: 'ay',
+    adet: 'Makine adedi',
+    net: 'Net',
+    kdv: 'KDV',
+    toplam: 'Toplam',
+    durum: 'Durum',
+    durumlar: {
+      pending: 'Ödeme bekleniyor',
+      paid: 'Ödendi',
+      failed: 'Ödeme başarısız',
+      cancelled: 'İptal edildi',
+    } as Record<string, string>,
+    bekleyenBilgi:
+      'Ödeme bekleyen siparişler için ödeme talimatını sipariş numaranızla team@bigventus.com adresinden isteyebilirsiniz.',
+  },
   genel: {
+    oturumKontrol: 'Oturum kontrol ediliyor…',
     cikisYapiliyor: 'Çıkış yapılıyor…',
     kapat: 'Kapat',
   },

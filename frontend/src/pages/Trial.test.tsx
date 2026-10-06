@@ -30,9 +30,16 @@ beforeEach(() => {
   vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock')
   vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
   vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+  vi.spyOn(api, 'get').mockResolvedValue({ days: 10 })
 })
 
 describe('Trial', () => {
+  test('müşteriye tanımlı deneme süresi sunucudan gösterilir', async () => {
+    render(<Ekran />)
+    expect(await screen.findByText('Size tanımlı deneme süresi: 10 gün.')).toBeInTheDocument()
+    expect(api.get).toHaveBeenCalledWith('/api/v1/trial-settings')
+  })
+
   test('dosya seçilmeden gönder devre dışı', () => {
     render(<Ekran />)
     expect(screen.getByRole('button', { name: 'Deneme Lisansı Üret' })).toBeDisabled()

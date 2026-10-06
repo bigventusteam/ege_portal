@@ -199,3 +199,25 @@ def require_staff(user: User = Depends(get_current_user)) -> User:
     if not user.is_staff:
         raise HTTPException(403, "bu işlem için üretici (personel) yetkisi gerekli")
     return user
+
+
+class MeResponse(BaseModel):
+    user_id: int
+    customer_id: int
+    customer_name: str
+    email: str
+    is_staff: bool
+
+
+@router.get("/me", response_model=MeResponse)
+def ben(user: User = Depends(get_current_user)) -> MeResponse:
+    """Oturum çerezinin (ya da bearer token'ın) kime ait olduğu. Arayüz sayfa
+    yenilendiğinde "oturum açık mı" bilgisini localStorage'dan değil buradan
+    kurar; geçersiz/süresi dolmuş oturumda 401."""
+    return MeResponse(
+        user_id=user.id,
+        customer_id=user.customer_id,
+        customer_name=user.customer.name,
+        email=user.email,
+        is_staff=user.is_staff,
+    )

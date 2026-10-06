@@ -64,6 +64,9 @@ export function OrderSummary() {
             {strings.siparis.odeme}
           </button>
         )}{' '}
+        <Link to="/siparislerim" className="ege-btn ege-btn-outline">
+          {strings.nav.siparislerim}
+        </Link>{' '}
         <Link to="/aboneliklerim" className="ege-btn ege-btn-outline">
           {strings.siparis.aboneliklereDon}
         </Link>

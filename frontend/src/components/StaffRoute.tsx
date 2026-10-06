@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 import { NotFound } from '../pages/NotFound'
 import { useAuthStore } from '../store/auth'
+import { strings } from '../strings'
 
 /** `ProtectedRoute`'tan AYRI: oturum yoksa aynı şekilde /giris'e yönlendirir,
  * ama oturum VAR ve personel DEĞİLSE (`isStaff=false`) sessizce bir 404
@@ -12,6 +13,10 @@ import { useAuthStore } from '../store/auth'
  * bir UX kısayolu, güvenlik sınırı DEĞİL. */
 export function StaffRoute({ children }: { children: ReactNode }) {
   const user = useAuthStore((s) => s.user)
+  const durum = useAuthStore((s) => s.durum)
+  // /auth/me henüz dönmediyse yönlendirme YAPMA — yenilemede oturumu açık
+  // kullanıcı bir an /giris'e atılmasın.
+  if (durum === 'bilinmiyor') return <p>{strings.genel.oturumKontrol}</p>
   if (!user) return <Navigate to="/giris" replace />
   if (!user.isStaff) return <NotFound />
   return <>{children}</>
