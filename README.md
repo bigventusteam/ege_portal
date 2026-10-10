@@ -542,6 +542,7 @@ açılmaz.
 | `docker-compose.yml` | `db` (Postgres 16, kalıcı volume, dışa açık port YOK) + `app` (yalnız `127.0.0.1` port eşlemesi, kalıcı `portal_releases` volume'ü, özel anahtar salt-okunur bağlanır) + `caddy` (80/443 dışa açık, otomatik HTTPS). Sırlar `${VAR:?...}` — tanımsızsa compose AÇIKÇA hatayla durur. |
 | `Caddyfile` | Otomatik HTTPS (`{$PORTAL_DOMAIN:portal.bigventus.com}`) + güvenlik başlıkları + `reverse_proxy app:8002`. |
 | `.env.deploy.example` | `deploy/.env` olarak kopyalanacak sır şablonu. |
+| `OKUBENI.md` | Üretim lisans imza anahtarı runbook'u: üretim, yedek, yedeğe geçiş, sızma senaryoları. |
 
 ### Kurulum
 
@@ -569,9 +570,10 @@ docker run --rm -v ege_portal_portal_releases:/veri:ro -v "$(pwd)":/yedek alpine
     tar czf /yedek/surumler-$(date +%Y%m%d).tar.gz -C /veri .
 ```
 
-`EGE_LISANS_PRIVATE_KEY_PATH`teki özel anahtar dosyası AYRI, offline bir
-yedekte (kasa vb.) tutulmalı — konteyner/volume yedeklemesinin KAPSAMI
-DIŞINDA, kasıtlı (host dosya sistemi, salt-okunur bağlanır).
+Lisans imza anahtarı (parolayla şifreli PEM ve parola dosyası) konteyner
+ve volume yedeklemesinin **kapsamı dışındadır**. Üretimi, çevrimdışı
+yedeklemesi, portala kurulumu, ürünlere gömülmesi ve sızma/kayıp
+senaryoları için bkz. `deploy/OKUBENI.md` "Üretim anahtarı".
 
 ## Kapsam dışı bırakılanlar (bilerek)
 

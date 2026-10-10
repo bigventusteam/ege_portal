@@ -44,6 +44,18 @@ class Settings:
         # app/licensing.py::EgeLisansImzalayici. Tanımlı değilse imzalama
         # açık bir hatayla durur, sessizce imzasız lisans üretilmez.
         self.ege_lisans_private_key_path = os.getenv("EGE_LISANS_OZEL_ANAHTAR", "")
+        # Şifreli özel anahtarın PAROLASINI içeren dosyanın YOLU (Docker
+        # secret: /run/secrets/...). Parolanın kendisi env'de KABUL EDİLMEZ
+        # (bkz. app/licensing.py::_DUZ_PAROLA_ENV_ADLARI). production'da
+        # şifresiz anahtar reddedilir.
+        self.ege_lisans_anahtar_parola_dosyasi = os.getenv("EGE_LISANS_ANAHTAR_PAROLA_DOSYASI", "")
+        # Hangi üretim anahtarıyla imzalandığı: "birincil" | "yedek" (yedeğe
+        # geçişte anahtar+parola dosyası ile BİRLİKTE değiştirilir; bkz.
+        # deploy/OKUBENI.md "Üretim anahtarı").
+        self.ege_lisans_anahtar_kimligi = os.getenv("EGE_LISANS_ANAHTAR_KIMLIGI", "birincil").strip().lower()
+        # (Ops.) beklenen açık anahtar parmak izi ("sha256:<16 hex>") —
+        # tanımlıysa yüklenen anahtar eşleşmezse süreç başlamaz.
+        self.ege_lisans_acik_anahtar_parmak_izi = os.getenv("EGE_LISANS_ACIK_ANAHTAR_PARMAK_IZI", "")
 
         # PLAN.md §3: süre bitince bu kadar gün "grace" (uyarı) modunda
         # çalışmaya devam edilir, sonra lite/kilitli moda düşülür.

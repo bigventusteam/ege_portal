@@ -33,7 +33,8 @@ def test_sirlar_zorunlu_var_sozdizimiyle_tanimli():
     """`${VAR:?...}` — tanımsızsa compose AÇIKÇA hatayla durur, sessizce
     boş/varsayılan bir sıra DÜŞMEZ."""
     metin = (DEPLOY / "docker-compose.yml").read_text(encoding="utf-8")
-    for degisken in ("POSTGRES_PASSWORD", "SECRET_KEY", "BVPAY_URL", "BVPAY_API_KEY", "EGE_LISANS_PRIVATE_KEY_PATH"):
+    for degisken in ("POSTGRES_PASSWORD", "SECRET_KEY", "BVPAY_URL", "BVPAY_API_KEY", "EGE_LISANS_PRIVATE_KEY_PATH",
+                     "EGE_LISANS_PASSWORD_FILE_PATH", "EGE_LISANS_ACIK_ANAHTAR_PARMAK_IZI"):
         assert f"${{{degisken}:?" in metin, degisken
 
 
@@ -133,3 +134,34 @@ def test_caddyfile_app_servisine_proxy_yapar():
 def test_caddyfile_portal_domain_varsayilani_bigventus():
     metin = (DEPLOY / "Caddyfile").read_text(encoding="utf-8")
     assert "portal.bigventus.com" in metin
+
+
+# ─── Lisans imza anahtarı (secrets, salt-okunur, volume'e yazılmaz) ───────
+
+
+def test_lisans_anahtari_ve_parolasi_secret_olarak_baglanir():
+    belge = _compose()
+    app = belge["services"]["app"]
+    assert set(app["secrets"]) == {"ege_lisans_ozel_anahtar", "ege_lisans_anahtar_parola"}
+    assert "${EGE_LISANS_PRIVATE_KEY_PATH:?" in belge["secrets"]["ege_lisans_ozel_anahtar"]["file"]
+    assert "${EGE_LISANS_PASSWORD_FILE_PATH:?" in belge["secrets"]["ege_lisans_anahtar_parola"]["file"]
+    env = app["environment"]
+    assert env["EGE_LISANS_OZEL_ANAHTAR"] == "/run/secrets/ege_lisans_ozel_anahtar"
+    assert env["EGE_LISANS_ANAHTAR_PAROLA_DOSYASI"] == "/run/secrets/ege_lisans_anahtar_parola"
+    assert env["EGE_LISANS_ANAHTAR_KIMLIGI"].startswith("${EGE_LISANS_ANAHTAR_KIMLIGI")
+
+
+def test_lisans_anahtari_volumee_baglanmaz_parola_envde_yok():
+    app = _compose()["services"]["app"]
+    for v in app.get("volumes", []):
+        assert "anahtar" not in v.lower() and ".pem" not in v.lower() and "secret" not in v.lower(), v
+    for ad, deger in app["environment"].items():
+        # parola DEĞERİ hiçbir env'de taşınmaz — yalnız parola DOSYASININ yolu
+        if "PAROLA" in ad:
+            assert ad == "EGE_LISANS_ANAHTAR_PAROLA_DOSYASI" and str(deger).startswith("/run/secrets/")
+
+
+def test_deploy_okubeni_uretim_anahtari_runbooku():
+    metin = (DEPLOY / "OKUBENI.md").read_text(encoding="utf-8")
+    for baslik in ("Üretim anahtarı", "uretim_anahtari_olustur.py", "Yedek anahtara geçiş", "sızdı", "PUBLIC_KEYS"):
+        assert baslik in metin, baslik

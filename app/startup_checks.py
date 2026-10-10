@@ -55,6 +55,24 @@ def validate_startup_config() -> None:
             "cerezi acikca okuyabilir (bkz. app/routers/auth.py::_giris_yanitla)."
         )
 
+    # Lisans imza anahtarı AÇILIŞTA BİR KEZ yüklenir (şifreli PEM + parola
+    # dosyası, bkz. app/licensing.py). Yüklenemezse süreç başlamaz — ilk
+    # lisans isteğinde sürpriz bir 500 yerine. Yüklenen imzalayıcı
+    # app/deps.py'deki önbelleğe girer; sonraki imzalamalar onu kullanır.
+    from app.deps import _default_imzalayici
+    from app.licensing import LisansAnahtariHatasi
+
+    try:
+        imzalayici = _default_imzalayici()
+        imzalayici.yukle()
+    except LisansAnahtariHatasi as exc:
+        raise StartupConfigError(f"Lisans imza anahtari yuklenemedi: {exc}") from None
+    _logger.info(
+        "Lisans imza anahtarı yüklendi: kimlik=%s parmak_izi=%s",
+        imzalayici.anahtar_kimligi,
+        imzalayici.parmak_izi,
+    )
+
     # UYARI, HATA DEĞİL — TRUSTED_PROXIES boş olsa da süreç (fail-closed
     # olarak) doğru çalışır: app/net.py::client_ip basitçe X-Forwarded-For'u
     # hiç OKUMAZ, her zaman doğrudan bağlantı adresine düşer. Ama Caddy

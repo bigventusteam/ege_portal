@@ -176,6 +176,13 @@ imzasının portala OTOMATİK yüklenmesi — bu turda yükleme yalnız
   bekleyen yedek. Geliştirme anahtarları kaldırılır. Özel anahtar veritabanında
   değil, secret olarak bağlanan dosyada durur. İmzalama portalda ayrı bir
   modüldür; sonra ayrı imzalama servisine ya da KMS/HSM'e taşınabilir.
+  **Karar (2026-10-10):** Anahtar portal sunucusunda
+  `scripts/uretim_anahtari_olustur.py` ile üretilir. Parolayla şifreli
+  PKCS8 PEM olarak saklanır; parola ayrı bir secret dosyadan okunur, env'de
+  düz parola reddedilir. Production'da şifresiz anahtar reddedilir.
+  Çevrimdışı iki kopya tutulur, parolalar ayrı yerde saklanır. Yedeğe geçiş
+  `EGE_LISANS_ANAHTAR_KIMLIGI` ile yapılır. Runbook: `deploy/OKUBENI.md`
+  "Üretim anahtarı".
 - **Lisans zorunluluğu:** Satılan paketlerde `MAPEGE_REQUIRE_LICENSE=1`
   (şu an 0; müşteri `MAPEGE_MODE=pro` yazarak lisanssız pro kullanabiliyor).
   sisEGE'de de aynı kural uygulanır.
