@@ -130,6 +130,11 @@ kullanıcı dosyayı portala yükler → portal `license.json` üretir → kulla
 dosyayı ürüne yükler (mevcut `POST /api/license`). Yenileme de aynı yolla,
 elle yapılır.
 
+**Eklentiler (2026-10-12):** eklenti ürünlerinin (ör. `colege_soru`) kendi
+parmak izi dosyası yoktur; temel ürünün (colege) aktivasyonu, müşterinin aktif
+eklenti aboneliğini aynı lisansa temel ürünün parmak iziyle ekler. Lisans
+bitişi = min(temel, eklenti). Bkz. `app/services/eklentiler.py`.
+
 ### 5.4 İndirme
 Sürümler portala yüklenir (`paketle-*.ps1` çıktıları ve imzalı
 `release_manifest`). İndirme için giriş yapılmış olmak yeterli (abonelik

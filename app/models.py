@@ -161,13 +161,27 @@ class User(Base):
 # ─── Katalog ─────────────────────────────────────────────────────────────────
 
 class Product(Base):
-    """mapege / sisege / colege."""
+    """mapege / sisege / colege — ve EK ÜRÜNLER (eklenti), ör. colege_soru.
+
+    `requires_product_id` doluysa bu ürün bir EKLENTİdir (bkz.
+    app/services/eklentiler.py): yalnız temel ürünün AKTİF bir aboneliği
+    olan müşteriye satılır, kendi activation_request dosyası YOKTUR (ürün
+    tek dosya üretir: temel ürünün `product`'ıyla) — temel ürünün
+    aktivasyonuna, AYNI kurulumun parmak iziyle, aynı license.json'a
+    eklenir. Tek başına aktive edilemez."""
 
     __tablename__ = "products"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     code: Mapped[str] = mapped_column(String(30), unique=True)
     name: Mapped[str] = mapped_column(String(100))
+    requires_product_id: Mapped[int | None] = mapped_column(ForeignKey("products.id"))
+
+    requires_product: Mapped["Product | None"] = relationship(remote_side=[id])
+
+    @property
+    def is_addon(self) -> bool:
+        return self.requires_product_id is not None
 
 
 class Release(Base):

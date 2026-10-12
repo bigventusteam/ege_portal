@@ -24,7 +24,12 @@ def planlari_listele(db: Session = Depends(get_db)) -> list[PlanResponse]:
     sonuc: list[PlanResponse] = []
     for plan in plans:
         items = [
-            PlanItemResponse(product_code=item.product.code, product_name=item.product.name)
+            PlanItemResponse(
+                product_code=item.product.code,
+                product_name=item.product.name,
+                requires_product_code=item.product.requires_product.code if item.product.is_addon else None,
+                requires_product_name=item.product.requires_product.name if item.product.is_addon else None,
+            )
             for item in plan.items
         ]
         prices = []
@@ -40,5 +45,14 @@ def planlari_listele(db: Session = Depends(get_db)) -> list[PlanResponse]:
                     currency=price.currency,
                 )
             )
-        sonuc.append(PlanResponse(id=plan.id, code=plan.code, name=plan.name, items=items, prices=prices))
+        sonuc.append(
+            PlanResponse(
+                id=plan.id,
+                code=plan.code,
+                name=plan.name,
+                is_addon=bool(plan.items) and all(item.product.is_addon for item in plan.items),
+                items=items,
+                prices=prices,
+            )
+        )
     return sonuc

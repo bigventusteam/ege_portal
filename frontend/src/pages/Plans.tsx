@@ -38,10 +38,17 @@ export function Plans() {
           <div style={{ marginBottom: 12 }}>
             {plan.items.map((item) => (
               <span key={item.product_code} className="ege-badge" style={{ marginRight: 6 }}>
-                {item.product_name} · {strings.planlar.tamSurum}
+                {item.product_name} · {item.requires_product_code ? strings.planlar.eklenti : strings.planlar.tamSurum}
               </span>
             ))}
           </div>
+          {plan.items
+            .filter((item) => item.requires_product_code)
+            .map((item) => (
+              <p key={`eklenti-${item.product_code}`} style={{ fontSize: 13, color: 'var(--text-dim)' }}>
+                {strings.planlar.eklentiNotu(item.requires_product_name ?? item.requires_product_code ?? '')}
+              </p>
+            ))}
           {plan.prices.map((price) => (
             <div
               key={price.months}

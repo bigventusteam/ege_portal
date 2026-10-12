@@ -17,6 +17,9 @@ export function OfflineActivation() {
   const [basarili, setBasarili] = useState(false)
 
   const secilenAbonelik = subscriptions?.find((s) => s.id === subscriptionId)
+  // Eklenti aboneliklerinin kendi aktivasyonu yok (backend 422 döner) — listede gösterilmez.
+  const aktiveEdilebilir = subscriptions?.filter((s) => !s.is_addon) ?? []
+  const eklentiAbonelikleri = subscriptions?.filter((s) => s.is_addon) ?? []
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -65,7 +68,7 @@ export function OfflineActivation() {
               onChange={(e) => setSubscriptionId(Number(e.target.value) || null)}
             >
               <option value="">—</option>
-              {subscriptions.map((s) => (
+              {aktiveEdilebilir.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.plan_name}
                 </option>
@@ -75,7 +78,17 @@ export function OfflineActivation() {
 
           {secilenAbonelik && (
             <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>
-              {strings.aktivasyon.beklenenUrunler}: {secilenAbonelik.items.map((i) => i.product_name).join(', ')}
+              {strings.aktivasyon.beklenenUrunler}:{' '}
+              {secilenAbonelik.items
+                .filter((i) => !i.requires_product_code)
+                .map((i) => i.product_name)
+                .join(', ')}
+            </p>
+          )}
+
+          {eklentiAbonelikleri.length > 0 && (
+            <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>
+              {strings.aktivasyon.eklentiBilgisi(eklentiAbonelikleri.map((s) => s.plan_name).join(', '))}
             </p>
           )}
 

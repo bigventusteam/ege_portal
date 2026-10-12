@@ -83,4 +83,27 @@ describe('Subscriptions', () => {
     await user.click(await screen.findByRole('button', { name: 'Yeniden İndir' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('lisans bulunamadı')
   })
+
+  test('eklenti aboneliği açıklama ve etkin kurulum sayısıyla gösterilir, "lisans yok" yazmaz', async () => {
+    vi.spyOn(api, 'get').mockResolvedValue([
+      {
+        ...ORNEK_ABONELIK,
+        id: 9,
+        plan_code: 'colege-soru-yillik',
+        plan_name: 'colEGE Soru Sor — Yıllık (eklenti)',
+        is_addon: true,
+        items: [{ product_code: 'colege_soru', product_name: 'colEGE Soru Sor', requires_product_code: 'colege' }],
+        activations: [
+          { product_code: 'colege_soru', mode: 'offline', created_at: '2026-10-01T00:00:00Z', last_seen_at: null, revoked_at: null },
+          { product_code: 'colege_soru', mode: 'offline', created_at: '2026-09-01T00:00:00Z', last_seen_at: null, revoked_at: '2026-09-15T00:00:00Z' },
+        ],
+        issued_licenses: [],
+      },
+    ] satisfies SubscriptionResponse[])
+    render(<Ekran />)
+
+    expect(await screen.findByText(/Bu bir eklentidir: colege aboneliğinizin/)).toBeInTheDocument()
+    expect(screen.getByText(/Eklentinin etkin olduğu kurulum sayısı: 1/)).toBeInTheDocument()
+    expect(screen.queryByText('Bu abonelik için henüz verilmiş bir lisans yok.')).not.toBeInTheDocument()
+  })
 })

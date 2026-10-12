@@ -12,9 +12,22 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models import Activation, AuditEvent, Customer, Order, OrderStatus, Release, User
+from app.models import (
+    Activation,
+    AuditEvent,
+    Customer,
+    Order,
+    OrderStatus,
+    Plan,
+    PlanItem,
+    Product,
+    Release,
+    Subscription,
+    User,
+)
 from app.routers.auth import require_staff
 from app.schemas import (
+    AdminAddonSubscriptionResponse,
     AdminOrderResponse,
     CustomerTrialOverrideRequest,
     DeactivateReleaseRequest,
@@ -29,6 +42,12 @@ from app.schemas import (
     TrialSettingsUpdateRequest,
 )
 from app.services import trial as trial_service
+from app.services.eklentiler import (
+    aktif_eklenti_aktivasyon_sayisi,
+    aktif_mi,
+    ayni_kurulumdaki_eklenti_aktivasyonlari,
+    temel_urunun_aktif_aboneligi_var_mi,
+)
 from app.services.manual_payments import (
     AmountMismatchError,
     BankReferenceRequiredError,
@@ -232,6 +251,13 @@ def aktivasyonu_iptal_et(
     now = datetime.now(timezone.utc)
     activation.revoked_at = now
 
+    # Temel ürünün (ör. colege) aktivasyonu iptal edilince AYNI kurulumdaki
+    # eklenti aktivasyonları (ör. colege_soru) da iptal edilir — eklenti
+    # koltuğu da serbest kalsın (bkz. app/services/eklentiler.py madde 5).
+    eklenti_iptalleri = ayni_kurulumdaki_eklenti_aktivasyonlari(db, activation)
+    for eklenti in eklenti_iptalleri:
+        eklenti.revoked_at = now
+
     db.add(
         AuditEvent(
             event_type="activation.revoked_by_staff",
@@ -242,12 +268,63 @@ def aktivasyonu_iptal_et(
                 "reason": body.reason,
                 "product_id": activation.product_id,
                 "license_key_id": activation.license_key_id,
+                "addon_activation_ids": [e.id for e in eklenti_iptalleri],
             },
         )
     )
     db.commit()
 
-    return {"activation_id": activation.id, "revoked_at": now.isoformat()}
+    return {
+        "activation_id": activation.id,
+        "revoked_at": now.isoformat(),
+        "addon_activation_ids": [e.id for e in eklenti_iptalleri],
+    }
+
+
+# ─── Eklentiler (ek ürünler, ör. colEGE "Soru sor") ─────────────────────────
+
+
+@router.get("/eklentiler", response_model=list[AdminAddonSubscriptionResponse])
+def eklenti_aboneliklerini_listele(
+    db: Session = Depends(get_db), _: User = Depends(require_staff)
+) -> list[AdminAddonSubscriptionResponse]:
+    """Eklenti ürünü içeren TÜM abonelikler — destek için: temel ürün
+    aboneliği hâlâ aktif mi, eklenti koltuklarından kaçı kullanılıyor.
+    (Ayrıntı ve kurallar: app/services/eklentiler.py.)"""
+    now = datetime.now(timezone.utc)
+    satirlar = db.execute(
+        select(Subscription, Product)
+        .join(Plan, Subscription.plan_id == Plan.id)
+        .join(PlanItem, PlanItem.plan_id == Plan.id)
+        .join(Product, PlanItem.product_id == Product.id)
+        .where(Product.requires_product_id.is_not(None))
+        .order_by(Subscription.id)
+    ).all()
+    sonuc: list[AdminAddonSubscriptionResponse] = []
+    for sub, urun in satirlar:
+        kullanilan = sum(
+            aktif_eklenti_aktivasyon_sayisi(db, license_key_id=lk.id, product_id=urun.id)
+            for lk in sub.license_keys
+            if lk.revoked_at is None
+        )
+        sonuc.append(
+            AdminAddonSubscriptionResponse(
+                subscription_id=sub.id,
+                customer_id=sub.customer_id,
+                customer_name=sub.customer.name,
+                plan_code=sub.plan.code,
+                addon_product_code=urun.code,
+                base_product_code=urun.requires_product.code,
+                current_period_end=sub.current_period_end,
+                is_active=aktif_mi(sub, now),
+                base_subscription_active=temel_urunun_aktif_aboneligi_var_mi(
+                    db, customer_id=sub.customer_id, product_id=urun.requires_product_id, now=now
+                ),
+                seats=sub.seats,
+                seats_used=kullanilan,
+            )
+        )
+    return sonuc
 
 # ─── İndirme merkezi — sürümü yayından kaldırma ──────────────────────────────
 

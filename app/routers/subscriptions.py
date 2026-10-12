@@ -32,7 +32,11 @@ def _abonelik_getir(db: Session, subscription_id: int, user: User) -> Subscripti
 
 def _abonelik_yanitina_cevir(subscription: Subscription) -> SubscriptionResponse:
     items = [
-        SubscriptionPlanItemSummary(product_code=item.product.code, product_name=item.product.name)
+        SubscriptionPlanItemSummary(
+            product_code=item.product.code,
+            product_name=item.product.name,
+            requires_product_code=item.product.requires_product.code if item.product.is_addon else None,
+        )
         for item in subscription.plan.items
     ]
 
@@ -69,6 +73,7 @@ def _abonelik_yanitina_cevir(subscription: Subscription) -> SubscriptionResponse
         items=items,
         status=subscription.status.value,
         current_period_end=subscription.current_period_end,
+        is_addon=bool(subscription.plan.items) and all(item.product.is_addon for item in subscription.plan.items),
         activations=activations,
         issued_licenses=issued_licenses,
     )

@@ -58,10 +58,21 @@ export function Subscriptions() {
           <p>
             {strings.abonelikler.bitisTarihi}: {new Date(sub.current_period_end).toLocaleDateString('tr-TR')}
           </p>
-          <p>{strings.abonelikler.urunler}: {sub.items.map((i) => `${i.product_name} (${strings.planlar.tamSurum})`).join(', ')}</p>
+          <p>{strings.abonelikler.urunler}: {sub.items.map((i) => `${i.product_name} (${i.requires_product_code ? strings.planlar.eklenti : strings.planlar.tamSurum})`).join(', ')}</p>
+
+          {sub.is_addon && (
+            <>
+              <div className="ege-alert ege-alert-info">
+                {strings.abonelikler.eklentiNotu(sub.items.map((i) => i.requires_product_code).filter(Boolean).join(', '))}
+              </div>
+              <p>
+                {strings.abonelikler.eklentiKurulumlari}: {sub.activations.filter((a) => !a.revoked_at).length}
+              </p>
+            </>
+          )}
 
           <h3>{strings.abonelikler.lisanslar}</h3>
-          {sub.issued_licenses.length === 0 && <p>{strings.abonelikler.lisansYok}</p>}
+          {sub.issued_licenses.length === 0 && !sub.is_addon && <p>{strings.abonelikler.lisansYok}</p>}
           <ul>
             {sub.issued_licenses.map((lic) => (
               <li key={lic.license_id}>

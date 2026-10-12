@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.models import Customer, Order, OrderStatus, Plan
+from app.services.eklentiler import siparis_icin_eklenti_kontrolu
 from app.services.pricing import gecerli_fiyat, kdv_hesapla
 
 
@@ -51,6 +52,10 @@ def create_order(db: Session, *, customer_id: int, plan_id: int, months: int, qu
     plan = db.get(Plan, plan_id)
     if plan is None or not plan.is_active:
         raise PlanNotFoundError(plan_id)
+
+    # Eklenti (ör. colege_soru) yalnız temel ürünün aktif aboneliği olan
+    # müşteriye satılır — bkz. app/services/eklentiler.py.
+    siparis_icin_eklenti_kontrolu(db, customer_id=customer_id, plan=plan)
 
     price = gecerli_fiyat(db, plan_id, months)
 

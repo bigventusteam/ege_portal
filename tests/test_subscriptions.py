@@ -79,7 +79,10 @@ def test_abonelikleri_listele_odenmis_siparisten_sonra_gorunur(
     assert sub["plan_id"] == plan_pro.id
     assert sub["plan_code"] == plan_pro.code
     assert sub["status"] == "active"
-    assert sub["items"] == [{"product_code": urun_mapege.code, "product_name": urun_mapege.name}]
+    assert sub["is_addon"] is False
+    assert sub["items"] == [
+        {"product_code": urun_mapege.code, "product_name": urun_mapege.name, "requires_product_code": None}
+    ]
 
     # KARAR (2026-10-06, EGE lider onayı): ödeme artık imzalı bir
     # IssuedLicense ÜRETMEZ (yalnız LicenseKey) — bkz. _lisans_belgesi_ekle.

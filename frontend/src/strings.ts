@@ -47,6 +47,9 @@ export const strings = {
     kdvDahilToplam: 'KDV dahil toplam',
     siparisVer: 'Sipariş Ver',
     tamSurum: 'Tam sürüm',
+    eklenti: 'Eklenti',
+    eklentiNotu: (temel: string) =>
+      `Eklenti: yalnız aktif bir ${temel} aboneliği olan müşteriye satılır; ${temel} kurulumunuzun lisansına (aynı license.json) eklenir, ayrıca aktive edilmez.`,
     hata: 'Planlar yüklenemedi.',
   },
   siparis: {
@@ -87,6 +90,9 @@ export const strings = {
     durumAktif: 'aktif',
     durumSuresiDolmus: 'süresi dolmuş',
     durumIptal: 'iptal edildi',
+    eklentiNotu: (temel: string) =>
+      `Bu bir eklentidir: ${temel} aboneliğinizin çevrimdışı aktivasyonunda aynı license.json'a otomatik eklenir. Lisanslar ${temel} aboneliğinin altında listelenir.`,
+    eklentiKurulumlari: 'Eklentinin etkin olduğu kurulum sayısı',
   },
   aktivasyon: {
     baslik: 'Çevrimdışı Aktivasyon',
@@ -100,6 +106,8 @@ export const strings = {
     basarili: 'license.json indirildi.',
     dosyaCokBuyuk: (ad: string) => `"${ad}" çok büyük (en çok 16 KB olmalı).`,
     abonelikYok: 'Önce bir abonelik satın almalısınız.',
+    eklentiBilgisi: (eklentiler: string) =>
+      `Eklentiler (${eklentiler}) ayrıca aktive edilmez — temel ürün aboneliğinizi seçin; aktif eklentileriniz aynı license.json'a otomatik eklenir.`,
   },
   indirmeler: {
     baslik: 'İndirmeler',

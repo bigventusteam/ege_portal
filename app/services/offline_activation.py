@@ -55,6 +55,16 @@ müşteriye karşı TAM koruma sağlamaz — o durumda `instance_id` hash'i
 GERÇEK ve BİRİCİK görünür (rastgele üretilmiş, "unknown" değil), yalnızca
 paylaşılmıştır. Asıl kontrol çevrimiçi aktivasyondaki koltuk sayımı
 olacak (PLAN.md §8 madde 3, henüz kararlaştırılmadı).
+
+## Eklentiler (ek ürünler, ör. colege_soru — 2026-10-12)
+
+Eklenti ürünlerinin kendi activation_request dosyası YOKTUR; temel ürünün
+(colege) aktivasyonunda, müşterinin AKTİF eklenti aboneliği varsa eklenti
+aynı license.json'a, temel ürünün parmak iziyle eklenir. Lisansın bitişi
+o zaman min(temel abonelik, eklenti aboneliği) olur (şema v2'de `expires`
+tektir). Eklenti aboneliği üzerinden aktivasyon reddedilir. Eklenti
+koltuğu doluysa (bu kurulum onlardan biri değilse) lisans eklentisiz
+üretilir. Ayrıntı ve gerekçe: app/services/eklentiler.py.
 """
 from __future__ import annotations
 
@@ -68,11 +78,17 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.licensing import LisansImzalayici
-from app.models import TAM_SURUM_TIER, Activation, ActivationMode, AuditEvent, IssuedLicense, Subscription
+from app.models import TAM_SURUM_TIER, Activation, ActivationMode, AuditEvent, IssuedLicense, LicenseKey, Product, Subscription
 from app.services.activation_request import InvalidActivationRequestError, parse_activation_request
+from app.services.eklentiler import (
+    EklentiTekBasinaAktiveEdilemezError,
+    aday_eklenti_abonelikleri,
+    aktif_eklenti_aktivasyon_sayisi,
+    eklenti_aktivasyonunu_bul,
+)
 from app.services.licenses import get_or_create_license_key
 
-__all__ = ["InvalidActivationRequestError", "OfflineActivationError", "ProductMismatchError",
+__all__ = ["EklentiTekBasinaAktiveEdilemezError", "InvalidActivationRequestError", "OfflineActivationError", "ProductMismatchError",
            "SeatLimitExceededError", "SubscriptionNotActiveError", "create_offline_license"]
 
 
@@ -212,7 +228,15 @@ def create_offline_license(
             raise InvalidActivationRequestError(filename, f"'{product}' için birden fazla dosya yüklendi")
         istekler[product] = data
 
-    beklenen = {item.product.code: item for item in subscription.plan.items}
+    # Eklenti ürünlerinin kendi activation_request dosyası yoktur (bkz.
+    # app/services/eklentiler.py) — beklenen dosyalar yalnız TEMEL ürünler.
+    beklenen = {item.product.code: item for item in subscription.plan.items if not item.product.is_addon}
+    if not beklenen:
+        eklentiler = {item.product for item in subscription.plan.items}
+        raise EklentiTekBasinaAktiveEdilemezError(
+            eklentiler={u.code for u in eklentiler},
+            temeller={u.requires_product.code for u in eklentiler if u.requires_product is not None},
+        )
     if set(istekler) != set(beklenen):
         raise ProductMismatchError(beklenen=set(beklenen), gelen=set(istekler))
 
@@ -241,6 +265,29 @@ def create_offline_license(
         if _aktif_aktivasyon_sayisi(db, license_key_id=license_key.id, product_id=item.product_id) >= subscription.seats:
             raise SeatLimitExceededError(subscription_id=subscription.id, product_code=code, seats=subscription.seats)
 
+    # Eklentiler — yine HİÇBİR Activation yazılmadan önce karar verilir.
+    # Eklenti başına: aynı kurulumda aktif eklenti aktivasyonu varsa
+    # YENİLEME; yoksa eklenti aboneliğinde boş koltuk varsa YENİ; ikisi de
+    # yoksa eklenti bu lisansa eklenmez (temel aktivasyon reddedilmez).
+    eklenecek: dict[str, tuple[Subscription, Product, str, LicenseKey, Activation | None]] = {}
+    gorulen_eklentiler: dict[str, tuple[Subscription, Product, str]] = {}
+    for eklenti_sub, eklenti_urun in aday_eklenti_abonelikleri(
+        db, customer_id=subscription.customer_id, temel_kodlar=set(beklenen), now=now
+    ):
+        if eklenti_urun.code in eklenecek:
+            continue
+        temel_kod = eklenti_urun.requires_product.code
+        instance_id_hash = istekler[temel_kod]["fingerprint"]["components"]["instance_id"]
+        gorulen_eklentiler.setdefault(eklenti_urun.code, (eklenti_sub, eklenti_urun, instance_id_hash))
+        eklenti_lk, _ = get_or_create_license_key(db, eklenti_sub)
+        mevcut = eklenti_aktivasyonunu_bul(
+            db, license_key_id=eklenti_lk.id, product_id=eklenti_urun.id, instance_id_hash=instance_id_hash
+        )
+        if mevcut is not None or aktif_eklenti_aktivasyon_sayisi(
+            db, license_key_id=eklenti_lk.id, product_id=eklenti_urun.id
+        ) < eklenti_sub.seats:
+            eklenecek[eklenti_urun.code] = (eklenti_sub, eklenti_urun, temel_kod, eklenti_lk, mevcut)
+
     products_payload: dict[str, dict] = {}
     for code, item in beklenen.items():
         products_payload[code] = {
@@ -248,6 +295,16 @@ def create_offline_license(
             "tier": TAM_SURUM_TIER,
             "fingerprint_components": istekler[code]["fingerprint"]["components"],
         }
+    for code, (_, _, temel_kod, _, _) in eklenecek.items():
+        # colEGE soru kontrolü parmak izini "colege" ürün adıyla hesaplar —
+        # eklentiye temel ürünün dosyasındaki bileşenler AYNEN yazılır.
+        products_payload[code] = {
+            "tier": TAM_SURUM_TIER,
+            "fingerprint_components": istekler[temel_kod]["fingerprint"]["components"],
+        }
+
+    # Şema v2'de `expires` tektir: eklenti dahilse min(temel, eklenti(ler)).
+    bitis = min([subscription.current_period_end] + [sub.current_period_end for sub, *_ in eklenecek.values()])
 
     activation_id = f"act_{uuid.uuid4().hex[:16]}"
     payload = build_v2_payload(
@@ -260,7 +317,7 @@ def create_offline_license(
         },
         products=products_payload,
         issued=date.today().isoformat(),
-        expires=subscription.current_period_end.date().isoformat(),
+        expires=bitis.date().isoformat(),
         grace_days=settings.license_grace_days,
         activation={"id": activation_id, "mode": "offline"},
     )
@@ -298,6 +355,40 @@ def create_offline_license(
             )
         )
 
+    for code, (eklenti_sub, eklenti_urun, temel_kod, eklenti_lk, mevcut) in eklenecek.items():
+        components = istekler[temel_kod]["fingerprint"]["components"]
+        if mevcut is not None:
+            mevcut.fingerprint = json.dumps(components, sort_keys=True)
+            mevcut.last_seen_at = now
+            continue
+        db.add(
+            Activation(
+                license_key_id=eklenti_lk.id,
+                product_id=eklenti_urun.id,
+                fingerprint=json.dumps(components, sort_keys=True),
+                version=None,
+                mode=ActivationMode.OFFLINE,
+                last_seen_at=now,
+            )
+        )
+
+    for code, (eklenti_sub, eklenti_urun, instance_id_hash) in gorulen_eklentiler.items():
+        if code in eklenecek:
+            continue
+        db.add(
+            AuditEvent(
+                event_type="activation.addon_seat_full",
+                entity_type="subscription",
+                entity_id=str(eklenti_sub.id),
+                data={
+                    "product": code,
+                    "base_subscription_id": subscription.id,
+                    "instance_id_hash": instance_id_hash,
+                    "seats": eklenti_sub.seats,
+                },
+            )
+        )
+
     db.add(
         IssuedLicense(
             subscription_id=subscription.id,
@@ -305,7 +396,7 @@ def create_offline_license(
             payload=payload,
             signature=signature,
             issued_at=now,
-            expires_at=subscription.current_period_end,
+            expires_at=bitis,
         )
     )
     db.commit()

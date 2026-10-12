@@ -13,6 +13,9 @@ export interface TokenYaniti {
 export interface PlanItem {
   product_code: string
   product_name: string
+  // Eklenti (ek ürün, ör. colege_soru) ise temel ürünün kodu/adı — backend app/services/eklentiler.py.
+  requires_product_code?: string | null
+  requires_product_name?: string | null
 }
 
 export interface PlanPrice {
@@ -28,6 +31,7 @@ export interface Plan {
   id: number
   code: string
   name: string
+  is_addon?: boolean
   items: PlanItem[]
   prices: PlanPrice[]
 }
@@ -62,6 +66,7 @@ export interface OrderResponse {
 export interface SubscriptionPlanItemSummary {
   product_code: string
   product_name: string
+  requires_product_code?: string | null
 }
 
 export interface SubscriptionActivationSummary {
@@ -86,6 +91,8 @@ export interface SubscriptionResponse {
   items: SubscriptionPlanItemSummary[]
   status: string
   current_period_end: string
+  // Yalnız eklenti taşıyan abonelik: kendi aktivasyonu yok, temel ürünün lisansına eklenir.
+  is_addon?: boolean
   activations: SubscriptionActivationSummary[]
   issued_licenses: SubscriptionIssuedLicenseSummary[]
 }

@@ -94,4 +94,30 @@ describe('Plans', () => {
     await user.click(await screen.findByRole('button', { name: 'Sipariş Ver' }))
     await waitFor(() => expect(screen.getByTestId('konum')).toHaveTextContent('/siparis?plan_id=1&months=12'))
   })
+
+  test('eklenti planı "Eklenti" rozeti ve temel ürün notuyla gösterilir', async () => {
+    vi.spyOn(api, 'get').mockResolvedValue([
+      {
+        id: 2,
+        code: 'colege-soru-yillik',
+        name: 'colEGE Soru Sor — Yıllık (eklenti)',
+        is_addon: true,
+        items: [
+          {
+            product_code: 'colege_soru',
+            product_name: 'colEGE Soru Sor',
+            requires_product_code: 'colege',
+            requires_product_name: 'colEGE',
+          },
+        ],
+        prices: [
+          { months: 12, net: '1000.00', vat_rate: '20.00', vat_amount: '200.00', total: '1200.00', currency: '949' },
+        ],
+      },
+    ] satisfies Plan[])
+    render(<Ekran />)
+
+    expect(await screen.findByText('colEGE Soru Sor · Eklenti')).toBeInTheDocument()
+    expect(screen.getByText(/yalnız aktif bir colEGE aboneliği olan müşteriye satılır/)).toBeInTheDocument()
+  })
 })

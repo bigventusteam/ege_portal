@@ -91,4 +91,25 @@ describe('OfflineActivation', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('subscription_id=7 aktif değil')
   })
+
+  test('eklenti aboneliği seçilemez, bilgi notu gösterilir', async () => {
+    vi.spyOn(api, 'get').mockResolvedValue([
+      ORNEK_ABONELIK,
+      {
+        ...ORNEK_ABONELIK,
+        id: 9,
+        plan_code: 'colege-soru-yillik',
+        plan_name: 'colEGE Soru Sor (eklenti)',
+        is_addon: true,
+        items: [{ product_code: 'colege_soru', product_name: 'colEGE Soru Sor', requires_product_code: 'colege' }],
+      },
+    ] satisfies SubscriptionResponse[])
+    render(<Ekran />)
+
+    const secim = await screen.findByLabelText('Abonelik seçin')
+    expect(screen.getByRole('option', { name: 'mapEGE Abonelik' })).toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: 'colEGE Soru Sor (eklenti)' })).not.toBeInTheDocument()
+    expect(secim).toBeInTheDocument()
+    expect(screen.getByText(/Eklentiler \(colEGE Soru Sor \(eklenti\)\) ayrıca aktive edilmez/)).toBeInTheDocument()
+  })
 })

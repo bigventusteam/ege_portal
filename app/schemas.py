@@ -159,6 +159,8 @@ class SubscriptionPlanItemSummary(BaseModel):
     # `tier` yok: kademe yok, her lisans tam sürüm (bkz. app/models.py::TAM_SURUM_TIER).
     product_code: str
     product_name: str
+    # Eklentiyse temel ürünün kodu (ör. colege_soru -> "colege"), değilse None.
+    requires_product_code: str | None = None
 
 
 class SubscriptionActivationSummary(BaseModel):
@@ -186,6 +188,10 @@ class SubscriptionResponse(BaseModel):
     items: list[SubscriptionPlanItemSummary]
     status: str
     current_period_end: datetime
+    # Abonelik YALNIZ eklenti ürünü taşıyorsa True — kendi çevrimdışı
+    # aktivasyonu yoktur, temel ürünün aktivasyonuna eklenir; verilen
+    # lisanslar temel ürün aboneliğinin altında görünür.
+    is_addon: bool = False
     activations: list[SubscriptionActivationSummary]
     issued_licenses: list[SubscriptionIssuedLicenseSummary]
 
@@ -208,6 +214,10 @@ class PlanItemResponse(BaseModel):
     # `tier` yok: kademe yok, her lisans tam sürüm (bkz. app/models.py::TAM_SURUM_TIER).
     product_code: str
     product_name: str
+    # Eklentiyse temel ürünün kodu/adı — bu plan yalnız o ürünün aktif
+    # aboneliği olan müşteriye satılır (bkz. app/services/eklentiler.py).
+    requires_product_code: str | None = None
+    requires_product_name: str | None = None
 
 
 class PlanPriceResponse(BaseModel):
@@ -223,6 +233,7 @@ class PlanResponse(BaseModel):
     id: int
     code: str
     name: str
+    is_addon: bool = False
     items: list[PlanItemResponse]
     prices: list[PlanPriceResponse]
 
@@ -246,3 +257,19 @@ class ReleaseResponse(BaseModel):
     signed: bool
     notes: str | None
     published_at: datetime
+
+
+class AdminAddonSubscriptionResponse(BaseModel):
+    """`GET /api/v1/admin/eklentiler` satırı (bkz. app/routers/admin.py)."""
+
+    subscription_id: int
+    customer_id: int
+    customer_name: str
+    plan_code: str
+    addon_product_code: str
+    base_product_code: str
+    current_period_end: datetime
+    is_active: bool
+    base_subscription_active: bool
+    seats: int
+    seats_used: int

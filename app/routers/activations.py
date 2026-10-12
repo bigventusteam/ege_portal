@@ -9,6 +9,7 @@ from app.licensing import LisansImzalayici
 from app.models import Subscription, User
 from app.routers.auth import get_current_user
 from app.services.offline_activation import (
+    EklentiTekBasinaAktiveEdilemezError,
     InvalidActivationRequestError,
     ProductMismatchError,
     SeatLimitExceededError,
@@ -50,5 +51,5 @@ async def cevrimdisi_aktivasyon(
         )
     except (SubscriptionNotActiveError, SeatLimitExceededError) as e:
         raise HTTPException(409, str(e)) from e
-    except (InvalidActivationRequestError, ProductMismatchError) as e:
+    except (InvalidActivationRequestError, ProductMismatchError, EklentiTekBasinaAktiveEdilemezError) as e:
         raise HTTPException(422, str(e)) from e

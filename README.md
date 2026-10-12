@@ -69,6 +69,24 @@ Parola argv'den alınmaz — bir terminalde sorulur (`getpass`), yoksa
 stdin'in ilk satırından okunur. Var olan bir kullanıcıyı yükseltirken
 parola hiç sorulmaz/değiştirilmez.
 
+### Eklenti (ek ürün): colEGE "Soru sor"
+
+`colege_soru` ürünü ve `colege-soru-yillik` planı (temel ürün `colege`
+katalogda olmalı):
+
+```
+python scripts/eklenti_tohumla.py --net <12 aylık KDV hariç net>   # plan satışa AÇIK
+python scripts/eklenti_tohumla.py                                  # YER TUTUCU fiyat, plan KAPALI
+```
+
+Kurallar (ayrıntı: `app/services/eklentiler.py`): yalnız aktif colEGE
+aboneliği olan müşteriye satılır; ayrı aktive edilmez — colEGE'nin
+çevrimdışı aktivasyonu aktif eklentiyi aynı `license.json`'a
+(`products.colege_soru`, colEGE kurulumunun parmak iziyle) ekler; lisans
+bitişi = min(colEGE, eklenti) (şema v2'de `expires` tektir); eklentinin
+kendi koltuk sayısı vardır, aynı kurulumun yeniden aktivasyonu koltuk
+harcamaz. Personel: `GET /api/v1/admin/eklentiler`.
+
 ## Şema yönetimi
 
 colEGE ile aynı kural: şemanın tek kaynağı `alembic/versions/`'dir,

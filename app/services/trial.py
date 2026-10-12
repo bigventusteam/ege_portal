@@ -306,6 +306,13 @@ def create_trial_license(
     bilinmeyen = set(istekler) - set(urunler)
     if bilinmeyen:
         raise UnknownProductError(bilinmeyen)
+    # Eklenti ürünlerinin (ör. colege_soru) activation_request dosyası
+    # yoktur ve portal deneme lisansı verilmez — colEGE kendi kurulum
+    # denemesi süresince soru özelliğini zaten açar (bkz. app/services/
+    # eklentiler.py). `product`'ı elle değiştirilmiş bir dosya reddedilir.
+    eklentiler = {code for code, p in urunler.items() if p.is_addon}
+    if eklentiler:
+        raise UnknownProductError(eklentiler)
 
     grants = find_usable_grants(db, customer.id)
 

@@ -8,6 +8,7 @@ from app.db import get_db
 from app.models import Order, User
 from app.routers.auth import get_current_user
 from app.schemas import OrderCreateRequest, OrderResponse
+from app.services.eklentiler import TemelAbonelikGerekliError
 from app.services.orders import CustomerNotFoundError, InvalidQuantityError, PlanNotFoundError, create_order
 from app.services.pricing import PriceNotFoundError
 
@@ -35,6 +36,8 @@ def siparis_olustur(
         raise HTTPException(422, str(e)) from e
     except InvalidQuantityError as e:
         raise HTTPException(422, str(e)) from e
+    except TemelAbonelikGerekliError as e:
+        raise HTTPException(409, str(e)) from e
     return OrderResponse.model_validate(order)
 
 
