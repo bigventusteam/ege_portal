@@ -320,9 +320,41 @@ class Order(Base):
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=_utcnow)
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime, default=_utcnow, onupdate=_utcnow)
 
+    # ─── Eklenti siparişi (EŞ-SONLANMA, kullanıcı kararı 2026-10-12) ───
+    # Yalnız eklenti planı siparişlerinde dolu (bkz. app/services/eklentiler.py):
+    # eklentinin bağlanacağı temel (colEGE) abonelik, sipariş anında o
+    # aboneliğin bitişi (eklentinin bitişi BUNA eşitlenir — fiyat bu süreye
+    # göre orantılandı) ve orantılanan gün sayısı.
+    base_subscription_id: Mapped[int | None] = mapped_column(ForeignKey("subscriptions.id"))
+    addon_period_end: Mapped[datetime | None] = mapped_column(UTCDateTime)
+    prorated_days: Mapped[int | None] = mapped_column()
+
     customer: Mapped[Customer] = relationship(back_populates="orders")
     plan: Mapped[Plan] = relationship()
     payments: Mapped[list["Payment"]] = relationship(back_populates="order")
+    base_subscription: Mapped["Subscription | None"] = relationship(foreign_keys=[base_subscription_id])
+    addons: Mapped[list["OrderAddon"]] = relationship(back_populates="order", cascade="all, delete-orphan")
+
+
+class OrderAddon(Base):
+    """Temel abonelik (colEGE) YENİLEME siparişine eklenen, o aboneliğe
+    BAĞLI eklentinin yenileme satırı. `Order.net` bu satırların `net`'lerini
+    DE içerir (KDV toplam nete uygulanır — mevcut desen). Ödeme onaylanınca
+    eklenti aboneliğinin bitişi temel aboneliğin YENİ bitişine eşitlenir
+    (bkz. app/services/payments.py::apply_payment_effects)."""
+
+    __tablename__ = "order_addons"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"))
+    subscription_id: Mapped[int] = mapped_column(ForeignKey("subscriptions.id"))
+    plan_id: Mapped[int] = mapped_column(ForeignKey("plans.id"))
+    quantity: Mapped[int] = mapped_column(default=1)
+    net: Mapped[Decimal] = mapped_column(Numeric(12, 2))
+
+    order: Mapped[Order] = relationship(back_populates="addons")
+    subscription: Mapped["Subscription"] = relationship()
+    plan: Mapped[Plan] = relationship()
 
 
 class Payment(Base):
@@ -383,10 +415,16 @@ class Subscription(Base):
     status: Mapped[SubscriptionStatus] = _status_col(SubscriptionStatus, default=SubscriptionStatus.ACTIVE)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=_utcnow)
     updated_at: Mapped[datetime] = mapped_column(UTCDateTime, default=_utcnow, onupdate=_utcnow)
+    # Eklenti aboneliğinin BAĞLI olduğu temel abonelik (ör. colege_soru ->
+    # müşterinin colEGE aboneliği). Eklentinin bitişi her zaman bu aboneliğin
+    # bitişine hizalanır (eş-sonlanma); eklenti yalnız bu aboneliğin
+    # aktivasyonuna eklenir. Eklenti olmayan aboneliklerde NULL.
+    base_subscription_id: Mapped[int | None] = mapped_column(ForeignKey("subscriptions.id"))
 
     customer: Mapped[Customer] = relationship(back_populates="subscriptions")
     plan: Mapped[Plan] = relationship()
     license_keys: Mapped[list["LicenseKey"]] = relationship(back_populates="subscription")
+    base_subscription: Mapped["Subscription | None"] = relationship(remote_side=[id])
 
 
 class LicenseKey(Base):

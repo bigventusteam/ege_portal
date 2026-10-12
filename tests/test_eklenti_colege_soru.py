@@ -409,7 +409,9 @@ def test_yonetici_eklenti_iptali_colegeyi_etkilemez(
 
 def test_yonetici_eklenti_listesi(client, db, musteri, auth_headers, admin_headers, plan_colege, plan_soru, kurulum):
     colege = _abonelik(db, musteri.id, plan_colege)
-    soru = _abonelik(db, musteri.id, plan_soru, seats=3)
+    soru = _abonelik(db, musteri.id, plan_soru, seats=3, bitis=colege.current_period_end)
+    soru.base_subscription_id = colege.id
+    db.commit()
     _aktive_et(client, colege.id, auth_headers, kurulum.dosya())
     satirlar = client.get("/api/v1/admin/eklentiler", headers=admin_headers).json()
     assert satirlar == [{
@@ -417,6 +419,8 @@ def test_yonetici_eklenti_listesi(client, db, musteri, auth_headers, admin_heade
         "plan_code": "colege-soru-yillik", "addon_product_code": "colege_soru", "base_product_code": "colege",
         "current_period_end": satirlar[0]["current_period_end"], "is_active": True,
         "base_subscription_active": True, "seats": 3, "seats_used": 1,
+        "status": "active", "base_subscription_id": colege.id,
+        "base_period_end": satirlar[0]["base_period_end"], "aligned": True,
     }]
 
 

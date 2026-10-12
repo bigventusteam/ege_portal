@@ -4,7 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { api, hataGoster } from '../api/client'
 import { oranGoster, tutarGoster } from '../lib/money'
 import { strings } from '../strings'
-import type { OrderResponse, Plan } from '../types'
+import type { OrderResponse, Plan, SubscriptionResponse } from '../types'
 
 export function OrderSummary() {
   const [params] = useSearchParams()
@@ -23,8 +23,33 @@ export function OrderSummary() {
     enabled: Boolean(planId && months),
   })
 
+  const plan = plans?.find((p) => p.id === planId)
+  // Eklenti planı: bağlanacak temel aboneliği seçmek için abonelikler gerekir.
+  const eklentiKalemi = plan?.is_addon ? plan.items.find((i) => i.requires_product_code) : undefined
+  const { data: abonelikler } = useQuery({
+    queryKey: ['subscriptions'],
+    queryFn: () => api.get<SubscriptionResponse[]>('/api/v1/subscriptions'),
+    enabled: Boolean(eklentiKalemi),
+  })
+  const temelAdaylar = (abonelikler ?? []).filter(
+    (s) =>
+      !s.is_addon &&
+      s.status === 'active' &&
+      new Date(s.current_period_end) > new Date() &&
+      s.items.some((i) => i.product_code === eklentiKalemi?.requires_product_code),
+  )
+  const [temelId, setTemelId] = useState<number | null>(null)
+  const temelSecimGerekli = Boolean(eklentiKalemi) && temelAdaylar.length > 1
+  const temelHazir = !eklentiKalemi || (temelAdaylar.length > 0 && (!temelSecimGerekli || temelId !== null))
+
   const mutation = useMutation({
-    mutationFn: () => api.post<OrderResponse>('/api/v1/orders', { plan_id: planId, months, quantity }),
+    mutationFn: () =>
+      api.post<OrderResponse>('/api/v1/orders', {
+        plan_id: planId,
+        months,
+        quantity,
+        ...(temelSecimGerekli && temelId !== null ? { base_subscription_id: temelId } : {}),
+      }),
   })
 
   if (!planId || !months) {
@@ -43,6 +68,13 @@ export function OrderSummary() {
         <p>
           {strings.siparis.adet}: {order.quantity}
         </p>
+        {order.addon_period_end && (
+          <p>
+            {strings.siparis.eklentiBitisi}: {new Date(order.addon_period_end).toLocaleDateString('tr-TR')}
+            {order.prorated_days != null && ` (${strings.siparis.orantiliGun(order.prorated_days)})`}
+          </p>
+        )}
+        {order.addons && order.addons.length > 0 && <p>{strings.siparis.bagliEklentiler(order.addons.length)}</p>}
         <p>
           {strings.siparis.net}: {tutarGoster(order.net, order.currency)}
         </p>
@@ -74,8 +106,8 @@ export function OrderSummary() {
     )
   }
 
-  const plan = plans?.find((p) => p.id === planId)
   const price = plan?.prices.find((p) => p.months === months)
+  const temelAd = eklentiKalemi?.requires_product_name ?? eklentiKalemi?.requires_product_code ?? ''
 
   if (!plan || !price) {
     return <p>{strings.siparis.planBulunamadi}</p>
@@ -101,6 +133,31 @@ export function OrderSummary() {
         />
       </label>
       <p className="ege-muted">{strings.siparis.adetAciklama}</p>
+      {eklentiKalemi && (
+        <div className="ege-alert ege-alert-info">{strings.siparis.eklentiOrantiNotu(temelAd)}</div>
+      )}
+      {eklentiKalemi && abonelikler && temelAdaylar.length === 0 && (
+        <div className="ege-alert ege-alert-err" role="alert">
+          {strings.siparis.temelAbonelikYok(temelAd)}
+        </div>
+      )}
+      {temelSecimGerekli && (
+        <div className="ege-field">
+          <label htmlFor="temel-abonelik">{strings.siparis.temelAbonelikSec(temelAd)}</label>
+          <select
+            id="temel-abonelik"
+            value={temelId ?? ''}
+            onChange={(e) => setTemelId(Number(e.target.value) || null)}
+          >
+            <option value="">—</option>
+            {temelAdaylar.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.plan_name} — {new Date(s.current_period_end).toLocaleDateString('tr-TR')}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <p>
         <em>{strings.siparis.birimFiyat}</em>
       </p>
@@ -125,7 +182,11 @@ export function OrderSummary() {
           {strings.siparis.adetGecersiz}
         </div>
       )}
-      <button className="ege-btn" onClick={() => mutation.mutate()} disabled={mutation.isPending || !adetGecerli}>
+      <button
+        className="ege-btn"
+        onClick={() => mutation.mutate()}
+        disabled={mutation.isPending || !adetGecerli || !temelHazir}
+      >
         {mutation.isPending ? strings.siparis.onaylaniyor : strings.siparis.onayla}
       </button>
     </div>

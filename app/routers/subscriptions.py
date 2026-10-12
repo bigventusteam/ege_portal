@@ -74,6 +74,7 @@ def _abonelik_yanitina_cevir(subscription: Subscription) -> SubscriptionResponse
         status=subscription.status.value,
         current_period_end=subscription.current_period_end,
         is_addon=bool(subscription.plan.items) and all(item.product.is_addon for item in subscription.plan.items),
+        base_subscription_id=subscription.base_subscription_id,
         activations=activations,
         issued_licenses=issued_licenses,
     )

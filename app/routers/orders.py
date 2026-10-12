@@ -8,7 +8,13 @@ from app.db import get_db
 from app.models import Order, User
 from app.routers.auth import get_current_user
 from app.schemas import OrderCreateRequest, OrderResponse
-from app.services.eklentiler import TemelAbonelikGerekliError
+from app.services.eklentiler import (
+    EklentiKoltukFazlaError,
+    EklentiZatenAktifError,
+    GecersizTemelAbonelikError,
+    TemelAbonelikGerekliError,
+    TemelAbonelikSecimiGerekliError,
+)
 from app.services.orders import CustomerNotFoundError, InvalidQuantityError, PlanNotFoundError, create_order
 from app.services.pricing import PriceNotFoundError
 
@@ -26,7 +32,12 @@ def siparis_olustur(
     sipariş açabilmesine (IDOR) izin veriyordu."""
     try:
         order = create_order(
-            db, customer_id=user.customer_id, plan_id=body.plan_id, months=body.months, quantity=body.quantity
+            db,
+            customer_id=user.customer_id,
+            plan_id=body.plan_id,
+            months=body.months,
+            quantity=body.quantity,
+            base_subscription_id=body.base_subscription_id,
         )
     except CustomerNotFoundError as e:
         raise HTTPException(404, str(e)) from e
@@ -36,8 +47,10 @@ def siparis_olustur(
         raise HTTPException(422, str(e)) from e
     except InvalidQuantityError as e:
         raise HTTPException(422, str(e)) from e
-    except TemelAbonelikGerekliError as e:
+    except (TemelAbonelikGerekliError, EklentiZatenAktifError) as e:
         raise HTTPException(409, str(e)) from e
+    except (TemelAbonelikSecimiGerekliError, GecersizTemelAbonelikError, EklentiKoltukFazlaError) as e:
+        raise HTTPException(422, str(e)) from e
     return OrderResponse.model_validate(order)
 
 

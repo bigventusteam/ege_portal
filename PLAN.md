@@ -132,8 +132,10 @@ elle yapılır.
 
 **Eklentiler (2026-10-12):** eklenti ürünlerinin (ör. `colege_soru`) kendi
 parmak izi dosyası yoktur; temel ürünün (colege) aktivasyonu, müşterinin aktif
-eklenti aboneliğini aynı lisansa temel ürünün parmak iziyle ekler. Lisans
-bitişi = min(temel, eklenti). Bkz. `app/services/eklentiler.py`.
+eklenti aboneliğini aynı lisansa temel ürünün parmak iziyle ekler. Eklenti
+bağlı olduğu temel abonelikle AYNI gün biter (eş-sonlanma; ilk alım kalan
+güne orantılı, yenileme temel abonelikle birlikte). Lisans bitişi =
+min(temel, eklenti). Bkz. `app/services/eklentiler.py`.
 
 ### 5.4 İndirme
 Sürümler portala yüklenir (`paketle-*.ps1` çıktıları ve imzalı

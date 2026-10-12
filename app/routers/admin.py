@@ -27,6 +27,7 @@ from app.models import (
 )
 from app.routers.auth import require_staff
 from app.schemas import (
+    AddonCancelRequest,
     AdminAddonSubscriptionResponse,
     AdminOrderResponse,
     CustomerTrialOverrideRequest,
@@ -43,8 +44,10 @@ from app.schemas import (
 )
 from app.services import trial as trial_service
 from app.services.eklentiler import (
+    EklentiIptalHatasi,
     aktif_eklenti_aktivasyon_sayisi,
     aktif_mi,
+    eklentiyi_iptal_et,
     ayni_kurulumdaki_eklenti_aktivasyonlari,
     temel_urunun_aktif_aboneligi_var_mi,
 )
@@ -322,9 +325,48 @@ def eklenti_aboneliklerini_listele(
                 ),
                 seats=sub.seats,
                 seats_used=kullanilan,
+                status=sub.status.value,
+                base_subscription_id=sub.base_subscription_id,
+                base_period_end=sub.base_subscription.current_period_end if sub.base_subscription else None,
+                aligned=(
+                    sub.base_subscription is not None
+                    and sub.base_subscription.current_period_end.date() == sub.current_period_end.date()
+                ),
             )
         )
     return sonuc
+
+
+@router.post("/eklentiler/{subscription_id}/iptal")
+def eklentiyi_iptal_et_ucu(
+    subscription_id: int,
+    body: AddonCancelRequest,
+    db: Session = Depends(get_db),
+    staff: User = Depends(require_staff),
+) -> dict:
+    """Eklenti aboneliğini iptal eder (iade/vazgeçme): status=cancelled,
+    aktif eklenti aktivasyonları iptal. Sonraki çevrimdışı aktivasyon
+    eklentisiz lisans üretir, sonraki temel abonelik yenilemesi eklentiyi
+    İÇERMEZ (bkz. app/services/eklentiler.py madde 4). Para iadesi bu
+    uçta YAPILMAZ — muhasebe işi; burada yalnız hak kapatılır."""
+    sub = db.get(Subscription, subscription_id)
+    if sub is None:
+        raise HTTPException(404, "abonelik bulunamadı")
+    now = datetime.now(timezone.utc)
+    try:
+        iptal = eklentiyi_iptal_et(db, sub, now)
+    except EklentiIptalHatasi as e:
+        raise HTTPException(409, str(e)) from e
+    db.add(
+        AuditEvent(
+            event_type="addon.cancelled_by_staff",
+            entity_type="subscription",
+            entity_id=str(sub.id),
+            data={"staff_user_id": staff.id, "reason": body.reason, "revoked_activation_ids": [a.id for a in iptal]},
+        )
+    )
+    db.commit()
+    return {"subscription_id": sub.id, "status": sub.status.value, "revoked_activation_ids": [a.id for a in iptal]}
 
 # ─── İndirme merkezi — sürümü yayından kaldırma ──────────────────────────────
 

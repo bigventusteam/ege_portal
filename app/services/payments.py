@@ -35,6 +35,7 @@ from sqlalchemy.orm import Session
 
 from app.bvpay import BVPayClient, BVPayPayment
 from app.models import AuditEvent, Order, OrderStatus, Payment, PaymentMethod, PaymentStatus, Subscription
+from app.services.eklentiler import eklenti_siparisini_uygula, yenileme_eklentilerini_uygula
 from app.services.licenses import get_or_create_license_key
 from app.services.subscriptions import extend_subscription
 
@@ -122,9 +123,16 @@ def apply_payment_effects(db: Session, *, order: Order, payment: Payment) -> Sub
     offline_activation.py, kendi imzalayıcısıyla) oluşur."""
     db.add(payment)
     order.status = OrderStatus.PAID
-    subscription = extend_subscription(
-        db, customer_id=order.customer_id, plan_id=order.plan_id, months=order.months, quantity=order.quantity
-    )
+    if order.base_subscription_id is not None:
+        # Eklenti siparişi: bitiş = temel aboneliğin sipariş anındaki bitişi
+        # (eş-sonlanma, bkz. app/services/eklentiler.py) — ay EKLENMEZ.
+        subscription = eklenti_siparisini_uygula(db, order)
+    else:
+        subscription = extend_subscription(
+            db, customer_id=order.customer_id, plan_id=order.plan_id, months=order.months, quantity=order.quantity
+        )
+        # Temel abonelik yenilemesi: bağlı eklentiler yeni bitişe hizalanır.
+        yenileme_eklentilerini_uygula(db, order, subscription)
     get_or_create_license_key(db, subscription)
     return subscription
 

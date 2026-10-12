@@ -29,6 +29,14 @@ def kdv_hesapla(net: Decimal, vat_rate: Decimal) -> tuple[Decimal, Decimal]:
     return vat_amount, net + vat_amount
 
 
+def orantili_net(yillik_net: Decimal, gun: int) -> Decimal:
+    """Eklenti eş-sonlanma fiyatı (bkz. app/services/eklentiler.py madde 2):
+    `yillik_net × gun / 365`, kuruşa ROUND_HALF_UP (KDV'deki AYNI kural).
+    `yillik_net` adet çarpımı UYGULANMIŞ toplam yıllık nettir — yuvarlama
+    toplamda BİR kez yapılır."""
+    return (yillik_net * Decimal(gun) / Decimal(365)).quantize(_IKI_BASAMAK, rounding=ROUND_HALF_UP)
+
+
 def gecerli_fiyat(db: Session, plan_id: int, months: int, *, when: datetime | None = None) -> Price:
     """`plan_id` × `months` için `when` anında (varsayılan: şimdi) geçerli
     Price'ı döner. İstemci tutar gönderemez — tutar HER ZAMAN buradan gelir."""

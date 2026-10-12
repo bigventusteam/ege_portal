@@ -73,6 +73,13 @@ export const strings = {
       'Çevrimiçi ödeme henüz devrede değil. Ödeme talimatı için sipariş numaranızla team@bigventus.com adresine yazın; ödemeniz onaylanınca aboneliğiniz otomatik açılır ve Aboneliklerim sayfasında görünür.',
     siparisNo: 'Sipariş No',
     aboneliklereDon: 'Aboneliklerime git',
+    eklentiOrantiNotu: (temel: string) =>
+      `Eklenti, bağlandığı ${temel} aboneliğinizle AYNI gün biter. Gösterilen fiyat yıllıktır; ücret ${temel} aboneliğinizin kalan gününe orantılanır (yıllık × kalan gün / 365) — kesin tutar sipariş onaylanınca gelir.`,
+    temelAbonelikSec: (temel: string) => `Bağlanacak ${temel} aboneliği`,
+    temelAbonelikYok: (temel: string) => `Bu eklenti için önce aktif bir ${temel} aboneliğiniz olmalı.`,
+    eklentiBitisi: 'Eklenti bitişi',
+    orantiliGun: (gun: number) => `${gun} güne orantılı`,
+    bagliEklentiler: (adet: number) => `Bağlı ${adet} eklenti de aynı döneme yenilenir (tutara dahil).`,
   },
   abonelikler: {
     baslik: 'Aboneliklerim',

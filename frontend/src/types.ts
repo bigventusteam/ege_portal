@@ -61,6 +61,19 @@ export interface OrderResponse {
   currency: string
   status: string
   created_at: string
+  // Eklenti siparişi (eş-sonlanma): bağlanan temel abonelik, eklenti bitişi, orantılanan gün.
+  base_subscription_id?: number | null
+  addon_period_end?: string | null
+  prorated_days?: number | null
+  // Temel abonelik yenilemesinde birlikte yenilenen bağlı eklentiler (net bunları içerir).
+  addons?: OrderAddonResponse[]
+}
+
+export interface OrderAddonResponse {
+  subscription_id: number
+  plan_id: number
+  quantity: number
+  net: string
 }
 
 export interface SubscriptionPlanItemSummary {
@@ -93,6 +106,7 @@ export interface SubscriptionResponse {
   current_period_end: string
   // Yalnız eklenti taşıyan abonelik: kendi aktivasyonu yok, temel ürünün lisansına eklenir.
   is_addon?: boolean
+  base_subscription_id?: number | null
   activations: SubscriptionActivationSummary[]
   issued_licenses: SubscriptionIssuedLicenseSummary[]
 }

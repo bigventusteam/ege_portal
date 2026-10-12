@@ -79,13 +79,17 @@ python scripts/eklenti_tohumla.py --net <12 aylık KDV hariç net>   # plan sat�
 python scripts/eklenti_tohumla.py                                  # YER TUTUCU fiyat, plan KAPALI
 ```
 
-Kurallar (ayrıntı: `app/services/eklentiler.py`): yalnız aktif colEGE
-aboneliği olan müşteriye satılır; ayrı aktive edilmez — colEGE'nin
-çevrimdışı aktivasyonu aktif eklentiyi aynı `license.json`'a
-(`products.colege_soru`, colEGE kurulumunun parmak iziyle) ekler; lisans
-bitişi = min(colEGE, eklenti) (şema v2'de `expires` tektir); eklentinin
-kendi koltuk sayısı vardır, aynı kurulumun yeniden aktivasyonu koltuk
-harcamaz. Personel: `GET /api/v1/admin/eklentiler`.
+Kurallar (ayrıntı: `app/services/eklentiler.py`) — **eş-sonlanma**
+(kullanıcı kararı 2026-10-12): eklenti siparişte müşterinin aktif bir colEGE
+aboneliğine bağlanır (`base_subscription_id`; birden çok aday varsa seçim
+zorunlu), o abonelikle AYNI gün biter, ücret = yıllık net × kalan gün / 365
+(kuruşa yarım-yukarı, KDV toplam nete). colEGE yenilenince bağlı eklenti
+yenileme siparişine satır olarak eklenir ve ödemede yeni bitişe hizalanır;
+eklenti tek başına yenilenmez. Ayrı aktive edilmez — bağlı olduğu colEGE
+aboneliğinin çevrimdışı aktivasyonu eklentiyi aynı `license.json`'a ekler
+(lisans bitişi = min(colEGE, eklenti); normal akışta eşittir). Personel:
+`GET /api/v1/admin/eklentiler`, `POST /api/v1/admin/eklentiler/{id}/iptal`
+(iptal edilen eklenti sonraki aktivasyona/yenilemeye girmez).
 
 ## Şema yönetimi
 

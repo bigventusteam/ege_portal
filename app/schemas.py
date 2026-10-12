@@ -13,6 +13,21 @@ class OrderCreateRequest(BaseModel):
     # Üst sınır keyfî değil, uydurma siparişlere karşı makul bir tavan
     # (bkz. app/services/orders.py::MAX_QUANTITY, tek yerde tanımlı).
     quantity: int = Field(default=1, ge=1, le=100)
+    # Yalnız eklenti planı siparişinde: eklentinin bağlanacağı temel
+    # abonelik. Müşterinin uygun tek aktif temel aboneliği varsa boş
+    # bırakılabilir; birden çoksa ZORUNLU (bkz. app/services/eklentiler.py).
+    base_subscription_id: int | None = None
+
+
+class OrderAddonResponse(BaseModel):
+    """Temel abonelik yenileme siparişine eklenen bağlı eklenti satırı."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    subscription_id: int
+    plan_id: int
+    quantity: int
+    net: Decimal
 
 
 class OrderResponse(BaseModel):
@@ -30,6 +45,13 @@ class OrderResponse(BaseModel):
     currency: str
     status: str
     created_at: datetime
+    # Eklenti siparişi (eş-sonlanma): bağlanan temel abonelik, eklentinin
+    # bitişi (= temel aboneliğin bitişi) ve ücretin orantılandığı gün sayısı.
+    base_subscription_id: int | None = None
+    addon_period_end: datetime | None = None
+    prorated_days: int | None = None
+    # Temel abonelik yenilemesinde birlikte yenilenen eklentiler (`net` bunları içerir).
+    addons: list[OrderAddonResponse] = []
 
 
 class BVPayWebhookPayload(BaseModel):
@@ -192,6 +214,8 @@ class SubscriptionResponse(BaseModel):
     # aktivasyonu yoktur, temel ürünün aktivasyonuna eklenir; verilen
     # lisanslar temel ürün aboneliğinin altında görünür.
     is_addon: bool = False
+    # Eklenti aboneliğinin bağlı olduğu temel abonelik (eş-sonlanma).
+    base_subscription_id: int | None = None
     activations: list[SubscriptionActivationSummary]
     issued_licenses: list[SubscriptionIssuedLicenseSummary]
 
@@ -273,3 +297,13 @@ class AdminAddonSubscriptionResponse(BaseModel):
     base_subscription_active: bool
     seats: int
     seats_used: int
+    status: str
+    base_subscription_id: int | None
+    base_period_end: datetime | None
+    # Eklentinin bitişi bağlı temel aboneliğin bitişiyle aynı gün mü (eş-sonlanma).
+    aligned: bool
+
+
+class AddonCancelRequest(BaseModel):
+    # Abonelik iptali/iadesi müşterinin elindeki eklentiyi kapatır — kim/neden izi zorunlu.
+    reason: str = Field(min_length=1)

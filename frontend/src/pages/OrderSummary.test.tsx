@@ -137,4 +137,56 @@ describe('OrderSummary', () => {
     await user.click(await screen.findByRole('button', { name: 'Siparişi Onayla' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('plan_id=1 bulunamadı ya da aktif değil')
   })
+
+  test('eklenti planında birden çok colEGE aboneliği varsa bağlanacak abonelik seçilmeden sipariş verilemez', async () => {
+    const user = userEvent.setup()
+    const gelecek = new Date(Date.now() + 1000 * 60 * 60 * 24 * 90).toISOString()
+    const colegeAbonelik = (id: number, ad: string) => ({
+      id,
+      plan_id: id,
+      plan_code: ad,
+      plan_name: ad,
+      items: [{ product_code: 'colege', product_name: 'colEGE' }],
+      status: 'active',
+      current_period_end: gelecek,
+      activations: [],
+      issued_licenses: [],
+    })
+    vi.spyOn(api, 'get').mockImplementation(async (url: string) => {
+      if (url === '/api/v1/subscriptions') return [colegeAbonelik(3, 'colEGE Yıllık'), colegeAbonelik(4, 'colEGE Paket')]
+      return [
+        {
+          id: 1,
+          code: 'colege-soru-yillik',
+          name: 'colEGE Soru Sor',
+          is_addon: true,
+          items: [
+            { product_code: 'colege_soru', product_name: 'colEGE Soru Sor', requires_product_code: 'colege', requires_product_name: 'colEGE' },
+          ],
+          prices: [{ months: 12, net: '1000.00', vat_rate: '20.00', vat_amount: '200.00', total: '1200.00', currency: '949' }],
+        },
+      ]
+    })
+    const post = vi.spyOn(api, 'post').mockResolvedValue({
+      ...ORNEK_SIPARIS,
+      net: '273.97',
+      base_subscription_id: 4,
+      addon_period_end: gelecek,
+      prorated_days: 90,
+      addons: [],
+    })
+    render(Ekran())
+
+    expect(await screen.findByText(/AYNI gün biter/)).toBeInTheDocument()
+    const onay = await screen.findByRole('button', { name: 'Siparişi Onayla' })
+    await waitFor(() => expect(screen.getByLabelText('Bağlanacak colEGE aboneliği')).toBeInTheDocument())
+    expect(onay).toBeDisabled()
+
+    await user.selectOptions(screen.getByLabelText('Bağlanacak colEGE aboneliği'), '4')
+    await user.click(onay)
+    await waitFor(() =>
+      expect(post).toHaveBeenCalledWith('/api/v1/orders', { plan_id: 1, months: 12, quantity: 1, base_subscription_id: 4 }),
+    )
+    expect(await screen.findByText(/90 güne orantılı/)).toBeInTheDocument()
+  })
 })

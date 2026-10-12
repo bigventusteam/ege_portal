@@ -272,7 +272,8 @@ def create_offline_license(
     eklenecek: dict[str, tuple[Subscription, Product, str, LicenseKey, Activation | None]] = {}
     gorulen_eklentiler: dict[str, tuple[Subscription, Product, str]] = {}
     for eklenti_sub, eklenti_urun in aday_eklenti_abonelikleri(
-        db, customer_id=subscription.customer_id, temel_kodlar=set(beklenen), now=now
+        db, customer_id=subscription.customer_id, temel_abonelik_id=subscription.id,
+        temel_kodlar=set(beklenen), now=now,
     ):
         if eklenti_urun.code in eklenecek:
             continue
