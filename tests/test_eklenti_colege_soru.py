@@ -31,7 +31,8 @@ _spec = importlib.util.spec_from_file_location(
     "eklenti_tohumla", Path(__file__).resolve().parents[1] / "scripts" / "eklenti_tohumla.py")
 _tohum = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_tohum)
-YER_TUTUCU_NET_FIYAT = _tohum.YER_TUTUCU_NET_FIYAT
+KARAR_NET_FIYAT = _tohum.KARAR_NET_FIYAT
+ESKI_YER_TUTUCU = _tohum.ESKI_YER_TUTUCU_NET_FIYAT
 colege_soru_tohumla = _tohum.colege_soru_tohumla
 
 LISANSLI = {"valid", "grace"}
@@ -75,7 +76,7 @@ def plan_colege(db, urun_colege):
 
 @pytest.fixture
 def plan_soru(db, plan_colege):
-    plan = colege_soru_tohumla(db, yer_tutucuyla_ac=True)
+    plan = colege_soru_tohumla(db)
     plan.prices[0].valid_from = datetime.now(timezone.utc) - timedelta(days=1)
     db.commit()
     return plan
@@ -138,12 +139,14 @@ def _siparis(client, plan_id, headers):
 # ─── Katalog / satış ─────────────────────────────────────────────────────────
 
 
-def test_tohum_yer_tutucu_fiyatla_plani_kapali_olusturur_ve_idempotent(db, urun_colege):
+def test_tohum_karar_fiyatiyla_plani_acik_olusturur_ve_idempotent(db, urun_colege):
     plan = colege_soru_tohumla(db)
     db.commit()
     assert plan.code == "colege-soru-yillik"
-    assert plan.is_active is False  # yer tutucu fiyatla satışa AÇILMAZ
-    assert [(p.months, p.amount) for p in plan.prices] == [(12, YER_TUTUCU_NET_FIYAT)]
+    assert plan.is_active is True
+    # Kullanıcı kararı: ayda 500 TL KDV hariç -> 12 ay 6000.00 net.
+    assert KARAR_NET_FIYAT == Decimal("6000.00")
+    assert [(p.months, p.amount) for p in plan.prices] == [(12, KARAR_NET_FIYAT)]
     urun = plan.items[0].product
     assert urun.code == "colege_soru" and urun.requires_product.code == "colege" and urun.is_addon
 
@@ -155,6 +158,21 @@ def test_tohum_yer_tutucu_fiyatla_plani_kapali_olusturur_ve_idempotent(db, urun_
 def test_tohum_gercek_fiyatla_plan_acik(db, urun_colege):
     plan = colege_soru_tohumla(db, net=Decimal("4800.00"))
     assert plan.is_active is True and plan.prices[0].amount == Decimal("4800.00")
+
+
+def test_tohum_eski_yer_tutucu_kapali_plani_karar_fiyatina_ceker(db, urun_colege):
+    urun = Product(code="colege_soru", name="colEGE Soru Sor", requires_product_id=urun_colege.id)
+    plan = Plan(code="colege-soru-yillik", name="eski", is_active=False)
+    plan.items.append(PlanItem(product=urun))
+    db.add(plan)
+    db.flush()
+    db.add(Price(plan_id=plan.id, months=12, amount=ESKI_YER_TUTUCU))
+    db.commit()
+    db.refresh(plan)
+    tekrar = colege_soru_tohumla(db)
+    db.commit()
+    assert tekrar.id == plan.id and tekrar.is_active is True
+    assert [(p.months, p.amount) for p in tekrar.prices] == [(12, KARAR_NET_FIYAT)]
 
 
 def test_tohum_temel_urun_yoksa_hata(db):
@@ -169,7 +187,7 @@ def test_planlar_ucu_eklentiyi_isaretler(client, plan_soru, plan_colege):
     assert soru["is_addon"] is True
     assert soru["items"] == [{"product_code": "colege_soru", "product_name": "colEGE Soru Sor",
                               "requires_product_code": "colege", "requires_product_name": "colEGE"}]
-    assert soru["prices"][0]["net"] == str(YER_TUTUCU_NET_FIYAT)
+    assert soru["prices"][0]["net"] == str(KARAR_NET_FIYAT)
 
 
 def test_colege_aboneligi_yoksa_eklenti_satilmaz(client, auth_headers, plan_soru):

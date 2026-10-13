@@ -28,7 +28,7 @@ _tohum = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_tohum)
 
 GECMIS = datetime.now(timezone.utc) - timedelta(days=1)
-SORU_YILLIK = _tohum.YER_TUTUCU_NET_FIYAT  # 1000.00 — yer tutucu
+SORU_YILLIK = _tohum.KARAR_NET_FIYAT  # 6000.00 — kullanıcı kararı (500 TL/ay)
 
 
 @pytest.fixture
@@ -58,7 +58,7 @@ def plan_colege(db, urun_colege):
 
 @pytest.fixture
 def plan_soru(db, plan_colege):
-    plan = _tohum.colege_soru_tohumla(db, yer_tutucuyla_ac=True)
+    plan = _tohum.colege_soru_tohumla(db)
     plan.prices[0].valid_from = GECMIS
     db.commit()
     return plan
@@ -227,7 +227,7 @@ def test_colege_yenilemesi_bagli_eklentiyi_ayni_doneme_yeniler(
     soru = _eklenti_sub(db, musteri.id, plan_soru)
 
     o = _siparis(client, auth_headers, plan_colege).json()  # colEGE yenileme (12 ay)
-    assert o["addons"] == [{"subscription_id": soru.id, "plan_id": plan_soru.id, "quantity": 1, "net": "1000.00"}]
+    assert o["addons"] == [{"subscription_id": soru.id, "plan_id": plan_soru.id, "quantity": 1, "net": str(SORU_YILLIK)}]
     assert Decimal(o["net"]) == Decimal("8000.00") + SORU_YILLIK
     _ode(client, admin_headers, o)
 
@@ -350,10 +350,11 @@ def test_eklenti_yalniz_bagli_oldugu_temel_aboneligin_aktivasyonuna_eklenir(
     assert set(r.json()["payload"]["products"]) == {"colege", "mapege"}
 
 
-def test_tohum_varsayilan_plan_satisa_kapali(client, db, musteri, auth_headers, plan_colege):
+def test_kapali_eklenti_plani_satilmaz(client, db, musteri, auth_headers, plan_colege):
+    # Plan satıştan kaldırılırsa (is_active=False) liste ve sipariş ucu reddeder.
     plan = _tohum.colege_soru_tohumla(db)
+    plan.is_active = False
     db.commit()
-    assert plan.is_active is False
     assert "colege-soru-yillik" not in {p["code"] for p in client.get("/api/v1/plans").json()}
     _abonelik(db, musteri.id, plan_colege)
     assert _siparis(client, auth_headers, plan).status_code == 404
